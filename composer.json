@@ -1,0 +1,17 @@
+{
+    "name": "bomberos/sistema-gestion-inventario",
+    "description": "Sistema de Gestión Integral, Registro y Control de Inventario para el Cuerpo de Bomberos",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
