@@ -11,7 +11,7 @@ $projectRoot = dirname(__DIR__);
 
 try {
     $db = new PDO(
-        'mysql:host=127.0.0.1;port=3307;dbname=bomberos-proyecto;charset=utf8mb4',
+        'mysql:host=127.0.0.1;port=3306;dbname=inventario;charset=utf8mb4',
         'root',
         '',
         array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
