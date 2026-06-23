@@ -1,7 +1,8 @@
 <?php
 
-require_once __DIR__ . '/../models/Model.php';
-require_once __DIR__ . '/../models/Personal.php';
+namespace App\Controllers;
+
+use App\Models\Personal;
 
 class PersonalController
 {

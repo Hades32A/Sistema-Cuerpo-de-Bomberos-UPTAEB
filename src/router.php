@@ -1,17 +1,17 @@
 <?php
 
-require_once 'src/controllers/InicioController.php';
-require_once 'src/controllers/InsumosController.php';
-require_once 'src/controllers/PersonalController.php';
-require_once 'src/controllers/PacientesController.php';
-require_once 'src/controllers/EmergenciasController.php';
-require_once 'src/controllers/VehiculosController.php';
+use App\Controllers\EmergenciasController;
+use App\Controllers\InicioController;
+use App\Controllers\InsumosController;
+use App\Controllers\PacientesController;
+use App\Controllers\PersonalController;
+use App\Controllers\VehiculosController;
 
 $projectRoot = dirname(__DIR__);
 
 try {
     $db = new PDO(
-        'mysql:host=127.0.0.1;port=3306;dbname=inventario;charset=utf8mb4',
+        'mysql:host=127.0.0.1;port=3307;dbname=inventario;charset=utf8mb4',
         'root',
         '',
         array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)

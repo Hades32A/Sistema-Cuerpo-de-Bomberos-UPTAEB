@@ -1,23 +1,27 @@
 <?php
 
+namespace App\Models;
+
+use PDO;
+
 class Insumo extends Model
 {
     public function obtenerTodos($busqueda = '')
     {
         $sql = '
             SELECT
-                i.id_insumo,
+                i.id_insumos,
                 i.codigo,
                 i.nombre,
                 c.nombre AS categoria,
-                i.id_categoria,
+                i.id_insumos,
                 i.cantidad,
                 i.unidad_medida AS unidad,
                 i.fecha_vencimiento,
                 i.estado,
                 i.stock_minimo
             FROM insumos i
-            INNER JOIN categorias_insumo c ON i.id_categoria = c.id_categoria
+            INNER JOIN Tipo_insumos c ON i.id_insumos = c.id_insumos
         ';
 
         $params = array();
@@ -37,7 +41,7 @@ class Insumo extends Model
 
     public function obtenerPorId($id)
     {
-        $stmt = $this->db->prepare('SELECT * FROM insumos WHERE id_insumo = :id LIMIT 1');
+        $stmt = $this->db->prepare('SELECT * FROM insumos WHERE id_insumos = :id LIMIT 1');
         $stmt->execute(array('id' => $id));
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -45,7 +49,7 @@ class Insumo extends Model
 
     public function obtenerCategorias()
     {
-        $stmt = $this->db->prepare('SELECT id_categoria, nombre FROM categorias_insumo ORDER BY nombre ASC');
+        $stmt = $this->db->prepare('SELECT DISTINCT Tipo_insumos AS nombre FROM insumos WHERE Tipo_insumos IS NOT NULL ORDER BY Tipo_insumos ASC');
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -126,7 +130,7 @@ class Insumo extends Model
 
     public function eliminar($id)
     {
-        $stmt = $this->db->prepare('DELETE FROM insumos WHERE id_insumo = :id');
+        $stmt = $this->db->prepare('DELETE FROM insumos WHERE id_insumos = :id');
 
         return $stmt->execute(array('id' => $id));
     }

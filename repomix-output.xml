@@ -1,0 +1,3836 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.htaccess
+composer.json
+database/inventario.sql
+index.php
+public/css/.gitkeep
+public/css/styles.css
+public/img/.gitkeep
+public/js/.gitkeep
+public/js/main.js
+src/controllers/EmergenciasController.php
+src/controllers/InformesController.php
+src/controllers/InicioController.php
+src/controllers/InsumosController.php
+src/controllers/PacientesController.php
+src/controllers/PersonalController.php
+src/controllers/router.php
+src/controllers/UsuarioController.php
+src/controllers/VehiculosController.php
+src/models/Emergencia.php
+src/models/Insumo.php
+src/models/Model.php
+src/models/Paciente.php
+src/models/Personal.php
+src/models/Roles/Administrador.php
+src/models/Roles/Bombero.php
+src/models/Usuario.php
+src/models/Vehiculo.php
+src/router.php
+src/views/components/header.php
+src/views/components/sidebar.php
+src/views/modules/emergencias.php
+src/views/modules/informes.php
+src/views/modules/inicio.php
+src/views/modules/insumos.php
+src/views/modules/pacientes.php
+src/views/modules/personal.php
+src/views/modules/vehiculos.php
+src/views/template.php
+srs/.gitkeep
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/controllers/InformesController.php">
+<?php
+
+namespace App\Controllers;
+
+class InformesController
+{
+    public function index($db)
+    {
+        // Por ahora cargamos la vista directamente para el diseño interactivo
+        include 'src/views/modules/informes.php';
+    }
+}
+</file>
+
+<file path="src/controllers/UsuarioController.php">
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+class UsuarioController
+{
+}
+</file>
+
+<file path="src/controllers/VehiculosController.php">
+<?php
+
+namespace App\Controllers;
+
+use App\Models\Vehiculo;
+
+class VehiculosController
+{
+    public function index($db)
+    {
+        $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
+        $modelo = new Vehiculo($db);
+
+        $kpis = $modelo->obtenerConteosKPI();
+        $vehiculos = $modelo->obtenerTodos($busqueda);
+        $registro = null;
+
+        if (isset($_GET['editar'])) {
+            $registro = $modelo->obtenerPorId($_GET['editar']);
+        }
+
+        include 'src/views/modules/vehiculos.php';
+    }
+
+    public function procesarPost($db)
+    {
+        $modelo = new Vehiculo($db);
+        $accion = $_POST['accion'] ?? '';
+
+        if ($accion === 'guardar') {
+            $modelo->crear(array(
+                'placa'  => trim($_POST['placa'] ?? ''),
+                'tipo'   => trim($_POST['tipo'] ?? 'otro'),
+                'marca'  => trim($_POST['marca'] ?? ''),
+                'modelo' => trim($_POST['modelo'] ?? ''),
+                'anio'   => (int) ($_POST['anio'] ?? 0),
+                'estado' => trim($_POST['estado'] ?? 'operativo'),
+            ));
+        }
+
+        if ($accion === 'actualizar') {
+            $modelo->actualizar($_POST['id_vehiculo'] ?? '', array(
+                'placa'  => trim($_POST['placa'] ?? ''),
+                'tipo'   => trim($_POST['tipo'] ?? 'otro'),
+                'marca'  => trim($_POST['marca'] ?? ''),
+                'modelo' => trim($_POST['modelo'] ?? ''),
+                'anio'   => (int) ($_POST['anio'] ?? 0),
+                'estado' => trim($_POST['estado'] ?? 'operativo'),
+            ));
+        }
+
+        if ($accion === 'eliminar') {
+            $modelo->eliminar($_POST['id_vehiculo'] ?? '');
+        }
+    }
+}
+</file>
+
+<file path="src/models/Roles/Administrador.php">
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models\Roles;
+
+use App\Models\Usuario;
+
+class Administrador extends Usuario
+{
+}
+</file>
+
+<file path="src/models/Roles/Bombero.php">
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models\Roles;
+
+use App\Models\Usuario;
+
+class Bombero extends Usuario
+{
+}
+</file>
+
+<file path="src/models/Usuario.php">
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+class Usuario
+{
+}
+</file>
+
+<file path="src/models/Vehiculo.php">
+<?php
+
+namespace App\Models;
+
+use PDO;
+
+class Vehiculo extends Model
+{
+    private function normalizarEstadoDb($estado)
+    {
+        $mapa = array(
+            'operativo'       => 'Operativo',
+            'mantenimiento'   => 'En Mantenimiento',
+            'fuera_servicio'  => 'Fuera de Servicio',
+            'baja'            => 'Baja',
+        );
+
+        $clave = strtolower(trim(str_replace(' ', '_', $estado)));
+
+        return $mapa[$clave] ?? $estado;
+    }
+
+    private function normalizarEstadoVista($estado)
+    {
+        $mapa = array(
+            'Operativo'           => 'operativo',
+            'En Mantenimiento'    => 'mantenimiento',
+            'Fuera de Servicio'   => 'fuera_servicio',
+            'Baja'                => 'baja',
+        );
+
+        return $mapa[$estado] ?? strtolower(str_replace(' ', '_', $estado));
+    }
+
+    private function mapearFila($fila)
+    {
+        if (!$fila) {
+            return $fila;
+        }
+
+        $fila['estado'] = $this->normalizarEstadoVista($fila['estado_db'] ?? '');
+        $fila['ultimo_mantenimiento'] = 'No registrado';
+
+        return $fila;
+    }
+
+    private function sqlSelectBase()
+    {
+        return '
+            SELECT
+                v.Placa AS id_vehiculo,
+                v.Placa AS placa,
+                v.Tipo AS tipo,
+                v.Marca AS marca,
+                v.Modelo AS modelo,
+                v.`Año` AS anio,
+                v.Estado AS estado_db
+            FROM vehiculo v
+        ';
+    }
+
+    public function obtenerTodos($busqueda = '')
+    {
+        $sql = $this->sqlSelectBase();
+        $params = array();
+
+        if ($busqueda !== '') {
+            $sql .= ' WHERE v.Placa LIKE :busqueda OR v.Marca LIKE :busqueda OR v.Modelo LIKE :busqueda';
+            $params['busqueda'] = '%' . $busqueda . '%';
+        }
+
+        $sql .= ' ORDER BY v.Placa ASC';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return array_map(array($this, 'mapearFila'), $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    public function obtenerPorId($id)
+    {
+        $sql = $this->sqlSelectBase() . ' WHERE v.Placa = :id LIMIT 1';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array('id' => (string) $id));
+
+        return $this->mapearFila($stmt->fetch(PDO::FETCH_ASSOC));
+    }
+
+    public function obtenerConteosKPI()
+    {
+        $sql = '
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN Estado = :estado_operativo THEN 1 ELSE 0 END) AS operativos,
+                SUM(CASE WHEN Estado IN (:estado_mantenimiento, :estado_fuera) THEN 1 ELSE 0 END) AS mantenimiento
+            FROM vehiculo
+        ';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array(
+            'estado_operativo'     => 'Operativo',
+            'estado_mantenimiento' => 'En Mantenimiento',
+            'estado_fuera'         => 'Fuera de Servicio',
+        ));
+
+        $fila = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return array(
+            'total'         => (int) ($fila['total'] ?? 0),
+            'operativos'    => (int) ($fila['operativos'] ?? 0),
+            'mantenimiento' => (int) ($fila['mantenimiento'] ?? 0),
+        );
+    }
+
+    public function crear($datos)
+    {
+        $sql = '
+            INSERT INTO vehiculo (Placa, Tipo, Marca, `Año`, Modelo, Estado)
+            VALUES (:placa, :tipo, :marca, :anio, :modelo, :estado)
+        ';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array(
+            'placa'  => $datos['placa'],
+            'tipo'   => $datos['tipo'],
+            'marca'  => $datos['marca'] ?? '',
+            'anio'   => $datos['anio'] ?: date('Y'),
+            'modelo' => $datos['modelo'],
+            'estado' => $this->normalizarEstadoDb($datos['estado'] ?? 'operativo'),
+        ));
+
+        return $datos['placa'];
+    }
+
+    public function actualizar($id, $datos)
+    {
+        $sql = '
+            UPDATE vehiculo SET
+                Placa = :placa,
+                Tipo = :tipo,
+                Marca = :marca,
+                `Año` = :anio,
+                Modelo = :modelo,
+                Estado = :estado
+            WHERE Placa = :id
+        ';
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute(array(
+            'placa'  => $datos['placa'],
+            'tipo'   => $datos['tipo'],
+            'marca'  => $datos['marca'] ?? '',
+            'anio'   => $datos['anio'] ?: date('Y'),
+            'modelo' => $datos['modelo'],
+            'estado' => $this->normalizarEstadoDb($datos['estado'] ?? 'operativo'),
+            'id'     => (string) $id,
+        ));
+    }
+
+    public function eliminar($id)
+    {
+        $stmt = $this->db->prepare('DELETE FROM vehiculo WHERE Placa = :id');
+
+        return $stmt->execute(array('id' => (string) $id));
+    }
+}
+</file>
+
+<file path="src/views/modules/informes.php">
+<div class="informes-container" style="padding: 24px; font-family: system-ui, -apple-system, sans-serif; display: flex; gap: 24px; background-color: #f8fafc; min-height: 100vh;">
+    
+    <div class="main-column" style="flex: 3; display: flex; flex-direction: column; gap: 24px;">
+        
+        <div class="card-panel" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; color: #1e293b;">
+                <span style="font-size: 1.2rem;">📄</span>
+                <h2 style="font-size: 1.1rem; font-weight: 600; margin: 0;">Generador de Informes</h2>
+            </div>
+
+            <form style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px;">Tipo de Informe</label>
+                    <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #64748b; font-size: 0.9rem; outline: none;">
+                        <option>Seleccione el tipo de informe</option>
+                        <option>Emergencias Atendidas</option>
+                        <option>Inventario de Insumos</option>
+                        <option>Personal de Guardia</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px;">Período del Informe</label>
+                    <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #64748b; font-size: 0.9rem; outline: none;">
+                        <option>Seleccione el período</option>
+                        <option>Últimos 7 días</option>
+                        <option>Mes actual</option>
+                        <option>Año en curso</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 8px;">
+                    <button type="button" style="flex: 1; background: #b31412; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        📊 Generar Informe
+                    </button>
+                    <button type="button" style="flex: 1; background: #fff; color: #1e293b; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        📥 Descargar PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-panel" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex: 1; display: flex; flex-direction: column;">
+            <h2 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0 0 16px 0;">Vista Previa del Informe</h2>
+            
+            <div style="flex: 1; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; color: #64748b; background-color: #f8fafc;">
+                <div style="font-size: 3.5rem; color: #94a3b8; margin-bottom: 12px;">📑</div>
+                <p style="font-size: 0.95rem; margin: 0; max-width: 320px; line-height: 1.4;">Seleccione los parámetros del informe para ver la vista previa</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="side-column" style="flex: 1.3; display: flex; flex-direction: column; gap: 24px; min-width: 300px;">
+        
+        <div class="card-panel" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; color: #1e293b;">
+                <span style="font-size: 1.2rem;">📋</span>
+                <h2 style="font-size: 1.1rem; font-weight: 600; margin: 0;">Informes Rápidos</h2>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start; position: relative;">
+                    <div>
+                        <h4 style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Emergencias Atendidas</h4>
+                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Últimos 7 días</span>
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;">23 emergencias</span>
+                    </div>
+                    <span style="color: #b31412; font-size: 0.9rem;">📄</span>
+                </div>
+
+                <div style="border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h4 style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Personal Activo</h4>
+                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Mes actual</span>
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;">45 bomberos</span>
+                    </div>
+                    <span style="color: #b31412; font-size: 0.9rem;">📄</span>
+                </div>
+
+                <div style="border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h4 style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Insumos Críticos</h4>
+                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Stock actual</span>
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;">5 insumos</span>
+                    </div>
+                    <span style="color: #b31412; font-size: 0.9rem;">📄</span>
+                </div>
+
+                <div style="border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h4 style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Vehículos Operativos</h4>
+                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Estado actual</span>
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;">6 vehículos</span>
+                    </div>
+                    <span style="color: #b31412; font-size: 0.9rem;">📄</span>
+                </div>
+
+                <button type="button" style="background: none; border: 1px solid #cbd5e1; color: #475569; padding: 10px; width: 100%; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 4px;">Ver Todos los Informes</button>
+            </div>
+        </div>
+
+        <div class="card-panel" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h2 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0 0 16px 0;">Formatos Disponibles</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background-color: #fef2f2; border-radius: 8px; border-left: 4px solid #ef4444;">
+                    <span style="font-size: 1.2rem;">📕</span>
+                    <div>
+                        <h5 style="font-size: 0.82rem; font-weight: 700; color: #991b1b; margin: 0;">PDF</h5>
+                        <span style="font-size: 0.72rem; color: #ef4444;">Documento imprimible</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background-color: #f0fdf4; border-radius: 8px; border-left: 4px solid #22c55e;">
+                    <span style="font-size: 1.2rem;">📗</span>
+                    <div>
+                        <h5 style="font-size: 0.82rem; font-weight: 700; color: #166534; margin: 0;">Excel</h5>
+                        <span style="font-size: 0.72rem; color: #22c55e;">Hoja de cálculo</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background-color: #eff6ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                    <span style="font-size: 1.2rem;">📘</span>
+                    <div>
+                        <h5 style="font-size: 0.82rem; font-weight: 700; color: #1e40af; margin: 0;">CSV</h5>
+                        <span style="font-size: 0.72rem; color: #3b82f6;">Datos separados por comas</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</file>
+
+<file path="src/views/modules/inicio.php">
+<?php
+if (!isset($dashboardData) || !is_array($dashboardData)) {
+    $dashboardData = array(
+        'personal_activo'      => 0,
+        'insumos_disponibles'  => 0,
+        'emergencias_hoy'      => 0,
+        'pacientes_atendidos'  => 0,
+        'vehiculos_operativos' => 0,
+        'operaciones_activas'  => 0,
+        'insumos_bajo_stock'   => 0,
+    );
+}
+?>
+<div class="dashboard-container" style="padding: 24px; font-family: system-ui, -apple-system, sans-serif; background-color: #f8fafc; min-height: 100vh;">
+    
+    <header class="dashboard__header" style="margin-bottom: 25px;">
+        <h1 class="dashboard__title" style="font-size: 1.8rem; font-weight: bold; color: #0f172a; margin: 0;">Panel de Control</h1>
+        <p style="color: #64748b; margin-top: 5px; font-size: 0.95rem;">Bienvenido al sistema de gestión del Cuerpo de Bomberos.</p>
+    </header>
+
+    <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px;">
+        
+        <article class="dashboard-card" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div>
+                <h2 style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin: 0 0 12px 0;">Personal Activo</h2>
+                <p style="font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0;"><?= (int) $dashboardData['personal_activo']; ?></p>
+            </div>
+            <div style="background-color: #eff6ff; color: #3b82f6; padding: 12px; border-radius: 8px; font-size: 1.5rem;">👥</div>
+        </article>
+
+        <article class="dashboard-card" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div>
+                <h2 style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin: 0 0 12px 0;">Insumos Disponibles</h2>
+                <p style="font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0;"><?= (int) $dashboardData['insumos_disponibles']; ?></p>
+            </div>
+            <div style="background-color: #f0fdf4; color: #22c55e; padding: 12px; border-radius: 8px; font-size: 1.5rem;">📦</div>
+        </article>
+
+        <article class="dashboard-card" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div>
+                <h2 style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin: 0 0 12px 0;">Emergencias Hoy</h2>
+                <p style="font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0;"><?= (int) $dashboardData['emergencias_hoy']; ?></p>
+            </div>
+            <div style="background-color: #fff7ed; color: #f97316; padding: 12px; border-radius: 8px; font-size: 1.5rem;">📞</div>
+        </article>
+
+        <article class="dashboard-card" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div>
+                <h2 style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin: 0 0 12px 0;">Pacientes Atendidos</h2>
+                <p style="font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0;"><?= (int) $dashboardData['pacientes_atendidos']; ?></p>
+            </div>
+            <div style="background-color: #fef2f2; color: #ef4444; padding: 12px; border-radius: 8px; font-size: 1.5rem;">🚑</div>
+        </article>
+
+        <article class="dashboard-card" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div>
+                <h2 style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin: 0 0 12px 0;">Vehículos Operativos</h2>
+                <p style="font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0;"><?= (int) $dashboardData['vehiculos_operativos']; ?></p>
+            </div>
+            <div style="background-color: #faf5ff; color: #a855f7; padding: 12px; border-radius: 8px; font-size: 1.5rem;">🚒</div>
+        </article>
+
+        <article class="dashboard-card" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div>
+                <h2 style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin: 0 0 12px 0;">Operaciones Activas</h2>
+                <p style="font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0;"><?= (int) $dashboardData['operaciones_activas']; ?></p>
+            </div>
+            <div style="background-color: #fefce8; color: #eab308; padding: 12px; border-radius: 8px; font-size: 1.5rem;">📈</div>
+        </article>
+
+    </div>
+
+    <div class="bottom-section" style="display: flex; gap: 24px; flex-wrap: wrap;">
+        
+        <div class="activity-panel" style="flex: 1.5; min-width: 350px; background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0 0 20px 0;">Actividad Reciente</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 8px;">
+                    <span style="font-size: 1.1rem;">🚨</span>
+                    <div>
+                        <p style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Nueva emergencia registrada</p>
+                        <span style="font-size: 0.75rem; color: #94a3b8;">Monitoreo en tiempo real</span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 8px;">
+                    <span style="font-size: 1.1rem;">📦</span>
+                    <div>
+                        <p style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Insumo actualizado en almacén</p>
+                        <span style="font-size: 0.75rem; color: #94a3b8;">Control de inventario</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alerts-panel" style="flex: 1; min-width: 300px; background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0 0 20px 0;">Alertas y Notificaciones</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                
+                <div style="padding: 14px; background-color: #fffbeb; border-radius: 8px; border-left: 4px solid #f59e0b; display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.2rem;">⚠️</span>
+                    <div>
+                        <h4 style="font-size: 0.85rem; font-weight: 700; color: #92400e; margin: 0;">Stock Bajo detectado</h4>
+                        <p style="font-size: 0.78rem; color: #b45309; margin: 3px 0 0 0;">Hay <strong><?= (int) $dashboardData['insumos_bajo_stock']; ?></strong> insumos por debajo del mínimo.</p>
+                    </div>
+                </div>
+
+                <div style="padding: 14px; background-color: #f0fdf4; border-radius: 8px; border-left: 4px solid #22c55e; display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.2rem;">✅</span>
+                    <div>
+                        <h4 style="font-size: 0.85rem; font-weight: 700; color: #166534; margin: 0;">Sistema Operativo</h4>
+                        <p style="font-size: 0.78rem; color: #15803d; margin: 3px 0 0 0;">Todos los módulos core responden correctamente.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+</file>
+
+<file path="src/views/modules/insumos.php">
+<?php
+$esEdicion = !empty($registro);
+$accionForm = $esEdicion ? 'actualizar' : 'guardar';
+$tituloModal = $esEdicion ? 'Editar Insumo' : 'Registrar Insumo';
+$textoBoton = $esEdicion ? 'Actualizar' : 'Registrar';
+$busqueda = $busqueda ?? '';
+?>
+<section class="module module--insumos insumos">
+    <header class="insumos-header">
+        <h1 class="insumos-header__title">Gestión de Insumos e Inventario</h1>
+        <button type="button" class="insumos-header__btn" data-modal-open="modal-insumos">+ Registrar Insumo</button>
+    </header>
+
+    <form method="GET" class="module-search" style="margin-bottom: 1rem; display: flex; gap: 8px; flex-wrap: wrap;">
+        <input type="hidden" name="modulo" value="insumos">
+        <input type="text" name="busqueda" class="module-search__input" placeholder="Buscar por nombre o código..." value="<?= htmlspecialchars($busqueda); ?>" style="flex:1;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:0.5rem;">
+        <button type="submit" class="insumos-table__action">Buscar</button>
+    </form>
+
+    <div class="insumos-cards" role="group" aria-label="Indicadores de inventario">
+        <article class="insumos-card">
+            <h2 class="insumos-card__label">Total de Insumos</h2>
+            <p class="insumos-card__value"><?= (int) $kpis['total']; ?></p>
+        </article>
+        <article class="insumos-card insumos-card--warning">
+            <h2 class="insumos-card__label">Alerta de Bajo Stock</h2>
+            <p class="insumos-card__value"><?= (int) $kpis['bajo_stock']; ?></p>
+        </article>
+        <article class="insumos-card insumos-card--danger">
+            <h2 class="insumos-card__label">Insumos Agotados</h2>
+            <p class="insumos-card__value"><?= (int) $kpis['agotados']; ?></p>
+        </article>
+    </div>
+
+    <div class="insumos-table-container">
+        <table class="insumos-table">
+            <thead class="insumos-table__head">
+                <tr>
+                    <th scope="col">Código</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Categoría</th>
+                    <th scope="col">Cantidad</th>
+                    <th scope="col">Unidad</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="insumos-table__body">
+                <?php if (empty($insumos)): ?>
+                    <tr><td colspan="7" style="text-align:center;padding:30px;color:#666;">No hay insumos registrados.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($insumos as $insumo): ?>
+                        <?php
+                        $cantidad = (float) ($insumo['cantidad'] ?? 0);
+                        if ($cantidad == 0) { $badgeClase = 'insumos-table__badge--danger'; $badgeTexto = 'Agotado'; }
+                        elseif ($cantidad <= 5) { $badgeClase = 'insumos-table__badge--warning'; $badgeTexto = 'Bajo stock'; }
+                        else { $badgeClase = 'insumos-table__badge--ok'; $badgeTexto = 'Disponible'; }
+                        ?>
+                        <tr>
+                            <td><?= htmlspecialchars($insumo['codigo'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars($insumo['nombre'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars($insumo['categoria'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars((string) $cantidad); ?></td>
+                            <td><?= htmlspecialchars($insumo['unidad'] ?? ''); ?></td>
+                            <td><span class="insumos-table__badge <?= $badgeClase; ?>"><?= htmlspecialchars($badgeTexto); ?></span></td>
+                            <td>
+                                <div class="insumos-table__actions">
+                                    <a href="index.php?modulo=insumos&amp;editar=<?= (int) ($insumo['id_insumo'] ?? 0); ?><?= $busqueda !== '' ? '&amp;busqueda=' . urlencode($busqueda) : ''; ?>" class="insumos-table__action">Editar</a>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('¿Eliminar este insumo?');">
+                                        <input type="hidden" name="modulo" value="insumos">
+                                        <input type="hidden" name="accion" value="eliminar">
+                                        <input type="hidden" name="busqueda_retorno" value="<?= htmlspecialchars($busqueda); ?>">
+                                        <input type="hidden" name="id_insumo" value="<?= (int) ($insumo['id_insumo'] ?? 0); ?>">
+                                        <button type="submit" class="insumos-table__action insumos-table__action--danger" title="Eliminar">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="modal<?= $esEdicion ? ' is-open' : ''; ?>" id="modal-insumos" aria-hidden="<?= $esEdicion ? 'false' : 'true'; ?>">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog" role="dialog">
+        <div class="modal__header">
+            <h2 class="modal__title"><?= htmlspecialchars($tituloModal); ?></h2>
+            <button type="button" class="modal__close" data-modal-close>&times;</button>
+        </div>
+        <form method="POST" class="modal__form">
+            <input type="hidden" name="modulo" value="insumos">
+            <input type="hidden" name="accion" value="<?= $accionForm; ?>">
+            <input type="hidden" name="busqueda_retorno" value="<?= htmlspecialchars($busqueda); ?>">
+            <?php if ($esEdicion): ?><input type="hidden" name="id_insumo" value="<?= (int) ($registro['id_insumo'] ?? 0); ?>"><?php endif; ?>
+            <div class="modal__field">
+                <label class="modal__label">Nombre del Insumo</label>
+                <input class="modal__input" type="text" name="nombre" required value="<?= htmlspecialchars($registro['nombre'] ?? ''); ?>">
+            </div>
+            <div class="modal__field">
+                <label class="modal__label">Cantidad</label>
+                <input class="modal__input" type="number" step="0.01" min="0" name="cantidad" required value="<?= htmlspecialchars((string) ($registro['cantidad'] ?? '0')); ?>">
+            </div>
+            <div class="modal__field">
+                <label class="modal__label">Categoría</label>
+                <select class="modal__input" name="id_categoria" required>
+                    <option value="">Seleccione categoría</option>
+                    <?php foreach ($categorias as $cat): ?>
+                        <option value="<?= (int) $cat['id_categoria']; ?>"<?= ($esEdicion && (int) ($registro['id_categoria'] ?? 0) === (int) $cat['id_categoria']) ? ' selected' : ''; ?>><?= htmlspecialchars($cat['nombre']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="modal__field">
+                <label class="modal__label">Fecha de Vencimiento</label>
+                <input class="modal__input" type="date" name="fecha_vencimiento" value="<?= htmlspecialchars($registro['fecha_vencimiento'] ?? ''); ?>">
+            </div>
+            <div class="modal__field">
+                <label class="modal__label">Estado</label>
+                <select class="modal__input" name="estado" required>
+                    <?php foreach (array('disponible','bajo_stock','agotado','vencido','inactivo') as $est): ?>
+                        <option value="<?= $est; ?>"<?= ($esEdicion && ($registro['estado'] ?? '') === $est) ? ' selected' : ''; ?>><?= ucfirst(str_replace('_',' ',$est)); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="modal__footer">
+                <button type="button" class="modal__btn modal__btn--secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="modal__btn modal__btn--primary"><?= htmlspecialchars($textoBoton); ?></button>
+            </div>
+        </form>
+    </div>
+</div>
+</file>
+
+<file path="src/views/modules/vehiculos.php">
+<?php
+$esEdicion = !empty($registro);
+$accionForm = $esEdicion ? 'actualizar' : 'guardar';
+$tituloModal = $esEdicion ? 'Editar Vehículo' : 'Registrar Vehículo';
+$textoBoton = $esEdicion ? 'Actualizar' : 'Registrar';
+$busqueda = $busqueda ?? '';
+?>
+<section class="module module--vehiculos">
+    <header class="insumos-header">
+        <h1 class="insumos-header__title">Gestión de Vehículos</h1>
+        <button type="button" class="insumos-header__btn" data-modal-open="modal-vehiculos">+ Agregar vehículo</button>
+    </header>
+
+    <form method="GET" class="module-search" style="margin-bottom: 1rem; display: flex; gap: 8px; flex-wrap: wrap;">
+        <input type="hidden" name="modulo" value="vehiculos">
+        <input type="text" name="busqueda" placeholder="Buscar por placa, marca o modelo..." value="<?= htmlspecialchars($busqueda); ?>" style="flex:1;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:0.5rem;">
+        <button type="submit" class="insumos-table__action">Buscar</button>
+    </form>
+
+    <div class="insumos-cards" role="group" aria-label="Indicadores de vehículos">
+        <article class="insumos-card"><h2 class="insumos-card__label">Total Vehículos</h2><p class="insumos-card__value"><?= (int) $kpis['total']; ?></p></article>
+        <article class="insumos-card insumos-card--warning"><h2 class="insumos-card__label">Unidades Operativas</h2><p class="insumos-card__value"><?= (int) $kpis['operativos']; ?></p></article>
+        <article class="insumos-card insumos-card--danger"><h2 class="insumos-card__label">Mantenimiento / Inoperativos</h2><p class="insumos-card__value"><?= (int) $kpis['mantenimiento']; ?></p></article>
+    </div>
+
+    <div class="insumos-table-container">
+        <table class="insumos-table">
+            <thead class="insumos-table__head">
+                <tr>
+                    <th scope="col">Placa</th><th scope="col">Tipo</th><th scope="col">Modelo</th>
+                    <th scope="col">Estado</th><th scope="col">Último Mantenimiento</th><th scope="col">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="insumos-table__body">
+                <?php if (empty($vehiculos)): ?>
+                    <tr><td colspan="6" style="text-align:center;padding:30px;color:#666;">No hay vehículos registrados en el sistema.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($vehiculos as $unidad): ?>
+                        <?php
+                        $estado = strtolower(trim($unidad['estado'] ?? 'fuera_servicio'));
+                        $claseBadge = ($estado === 'operativo') ? 'insumos-table__badge insumos-table__badge--ok' : 'insumos-table__badge insumos-table__badge--warning';
+                        ?>
+                        <tr>
+                            <td><?= htmlspecialchars($unidad['placa'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars($unidad['tipo'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars(trim(($unidad['marca'] ?? '') . ' ' . ($unidad['modelo'] ?? ''))); ?></td>
+                            <td><span class="<?= $claseBadge; ?>"><?= htmlspecialchars($unidad['estado'] ?? ''); ?></span></td>
+                            <td><?= htmlspecialchars($unidad['ultimo_mantenimiento'] ?? 'No registrado'); ?></td>
+                            <td>
+                                <div class="insumos-table__actions">
+                                    <a href="index.php?modulo=vehiculos&amp;editar=<?= urlencode((string) ($unidad['id_vehiculo'] ?? '')); ?>" class="insumos-table__action">Editar</a>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('¿Eliminar este vehículo?');">
+                                        <input type="hidden" name="modulo" value="vehiculos"><input type="hidden" name="accion" value="eliminar">
+                                        <input type="hidden" name="id_vehiculo" value="<?= htmlspecialchars((string) ($unidad['id_vehiculo'] ?? '')); ?>">
+                                        <button type="submit" class="insumos-table__action insumos-table__action--danger" title="Eliminar">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="modal<?= $esEdicion ? ' is-open' : ''; ?>" id="modal-vehiculos" aria-hidden="<?= $esEdicion ? 'false' : 'true'; ?>">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog" role="dialog">
+        <div class="modal__header">
+            <h2 class="modal__title"><?= htmlspecialchars($tituloModal); ?></h2>
+            <button type="button" class="modal__close" data-modal-close>&times;</button>
+        </div>
+        <form method="POST" class="modal__form">
+            <input type="hidden" name="modulo" value="vehiculos">
+            <input type="hidden" name="accion" value="<?= $accionForm; ?>">
+            <?php if ($esEdicion): ?><input type="hidden" name="id_vehiculo" value="<?= htmlspecialchars((string) ($registro['id_vehiculo'] ?? '')); ?>"><?php endif; ?>
+            <div class="modal__field"><label class="modal__label">Placa</label><input class="modal__input" type="text" name="placa" required value="<?= htmlspecialchars($registro['placa'] ?? ''); ?>"></div>
+            <div class="modal__field">
+                <label class="modal__label">Tipo</label>
+                <select class="modal__input" name="tipo" required>
+                    <?php foreach (array('autobomba','ambulancia','rescate','tanque','utilitario','otro') as $t): ?>
+                        <option value="<?= $t; ?>"<?= ($esEdicion && ($registro['tipo'] ?? '') === $t) ? ' selected' : ''; ?>><?= ucfirst($t); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="modal__field"><label class="modal__label">Marca</label><input class="modal__input" type="text" name="marca" value="<?= htmlspecialchars($registro['marca'] ?? ''); ?>"></div>
+            <div class="modal__field"><label class="modal__label">Modelo</label><input class="modal__input" type="text" name="modelo" required value="<?= htmlspecialchars($registro['modelo'] ?? ''); ?>"></div>
+            <div class="modal__field"><label class="modal__label">Año</label><input class="modal__input" type="number" name="anio" min="1900" max="2100" value="<?= htmlspecialchars((string) ($registro['anio'] ?? '')); ?>"></div>
+            <div class="modal__field">
+                <label class="modal__label">Estado</label>
+                <select class="modal__input" name="estado" required>
+                    <?php foreach (array('operativo','mantenimiento','fuera_servicio','baja') as $e): ?>
+                        <option value="<?= $e; ?>"<?= ($esEdicion && ($registro['estado'] ?? '') === $e) ? ' selected' : ''; ?>><?= ucfirst(str_replace('_',' ',$e)); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="modal__footer">
+                <button type="button" class="modal__btn modal__btn--secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="modal__btn modal__btn--primary"><?= htmlspecialchars($textoBoton); ?></button>
+            </div>
+        </form>
+    </div>
+</div>
+</file>
+
+<file path=".htaccess">
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+</file>
+
+<file path="composer.json">
+{
+    "name": "bomberos/sistema-gestion-inventario",
+    "description": "Sistema de Gestión Integral, Registro y Control de Inventario para el Cuerpo de Bomberos",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\Controllers\\": "src/controllers/",
+            "App\\Models\\": "src/models/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
+</file>
+
+<file path="database/inventario.sql">
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Servidor: 127.0.0.1:3307
+-- Tiempo de generación: 16-06-2026 a las 00:02:52
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Base de datos: `bomberos-proyecto`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `centros-salud`
+--
+
+CREATE TABLE `centros-salud` (
+  `id_centro` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `tipo` varchar(50) NOT NULL,
+  `direccion` varchar(200) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `detalles_insumos_llamda`
+--
+
+CREATE TABLE `detalles_insumos_llamda` (
+  `Id_detalles` int(11) NOT NULL,
+  `Id_LLamadas` int(11) NOT NULL,
+  `Id_insumos` int(11) NOT NULL,
+  `Cantidad_gastada` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `detalles_insumos_llamda`
+--
+
+INSERT INTO `detalles_insumos_llamda` (`Id_detalles`, `Id_LLamadas`, `Id_insumos`, `Cantidad_gastada`) VALUES
+(1, 1, 1, 3),
+(2, 1, 2, 1),
+(3, 2, 3, 4);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `donante_insumo`
+--
+
+CREATE TABLE `donante_insumo` (
+  `id_donacion` int(11) NOT NULL,
+  `fecha` date NOT NULL,
+  `cantidad` int(11) NOT NULL,
+  `id_ente` int(11) NOT NULL,
+  `id_insumo` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `ente_donante`
+--
+
+CREATE TABLE `ente_donante` (
+  `id_ente` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `insumos`
+--
+
+CREATE TABLE `insumos` (
+  `Id_insumos` int(11) NOT NULL,
+  `Tipo_insumos` varchar(50) NOT NULL,
+  `Nombre` varchar(50) NOT NULL,
+  `Cantidad` int(11) NOT NULL,
+  `Fecha_vencimiento` date NOT NULL,
+  `Estado` int(5) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `insumos`
+--
+
+INSERT INTO `insumos` (`Id_insumos`, `Tipo_insumos`, `Nombre`, `Cantidad`, `Fecha_vencimiento`, `Estado`) VALUES
+(1, 'Médico', 'Gasa Estéril', 100, '2028-05-12', 0),
+(2, 'Médico', 'Solución Fisiol', 50, '2027-10-30', 0),
+(3, 'Seguridad', 'Guantes Látex', 500, '2029-01-15', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `llamada`
+--
+
+CREATE TABLE `llamada` (
+  `Id_llamadas` int(11) NOT NULL,
+  `Tipo_emergencia` varchar(50) NOT NULL,
+  `Fecha` date NOT NULL,
+  `Hora` time NOT NULL,
+  `Observaciones` varchar(500) NOT NULL,
+  `Ubicacion` varchar(200) NOT NULL,
+  `Cedula_paciente` int(8) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `llamada`
+--
+
+INSERT INTO `llamada` (`Id_llamadas`, `Tipo_emergencia`, `Fecha`, `Hora`, `Observaciones`, `Ubicacion`, `Cedula_paciente`) VALUES
+(1, 'Médica', '2026-06-01', '09:30:00', 'Paciente con desmayo y baja tensión en pasillo B.', 'Sede Central UPTAEB', 14253647),
+(2, 'Accidente', '2026-06-20', '14:15:00', 'Colisión menor de moto cerca de la entrada principal.', 'Av. Los Horcones', 23456789);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `paciente`
+--
+
+CREATE TABLE `paciente` (
+  `Cedula` int(8) NOT NULL,
+  `Nombre` varchar(50) DEFAULT NULL,
+  `Apellido` varchar(50) DEFAULT NULL,
+  `Direccion` varchar(150) NOT NULL,
+  `PNF` varchar(50) NOT NULL,
+  `Cargo` varchar(50) NOT NULL,
+  `tipo_paciente` varchar(30) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `paciente`
+--
+
+INSERT INTO `paciente` (`Cedula`, `Nombre`, `Apellido`, `Direccion`, `PNF`, `Cargo`, `tipo_paciente`) VALUES
+(14253647, 'Carlos', 'Mendoza', 'Av. Los Abogados', 'Informática', 'Estudiante', 'Interno'),
+(18529634, 'María', 'Rodríguez', 'Calle 25 con 19', 'Contaduría', 'Docente', 'Interno'),
+(23456789, 'Juan', 'Pérez', 'Carrera 15, Sector Centro', 'Ninguno', 'Ninguno', 'Externo');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `personal`
+--
+
+CREATE TABLE `personal` (
+  `Cedula` int(8) NOT NULL,
+  `Rango` varchar(30) DEFAULT NULL,
+  `Nombre` varchar(50) DEFAULT NULL,
+  `Apellido` varchar(50) DEFAULT NULL,
+  `Telefono` varchar(20) NOT NULL,
+  `estado_personal` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `personal`
+--
+
+INSERT INTO `personal` (`Cedula`, `Rango`, `Nombre`, `Apellido`, `Telefono`, `estado_personal`) VALUES
+(15668992, 'Sargento', 'Luis', 'Gómez', '0412555123', 'Activo'),
+(19334556, 'Cabo Primero', 'Ana', 'Martínez', '0424555987', 'Activo'),
+(21554778, 'Distinguido', 'Pedro', 'Torres', '0416555456', 'De Vacaciones');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `personal_asignado`
+--
+
+CREATE TABLE `personal_asignado` (
+  `Id_LLamadas` int(11) NOT NULL,
+  `cedula_personal` int(8) NOT NULL,
+  `Rol_emergencia` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `personal_asignado`
+--
+
+INSERT INTO `personal_asignado` (`Id_LLamadas`, `cedula_personal`, `Rol_emergencia`) VALUES
+(1, 15668992, 'Paramédico Principal'),
+(1, 19334556, 'Chofer de Ambulancia'),
+(2, 15668992, 'Comandante de Incidente');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `servicio`
+--
+
+CREATE TABLE `servicio` (
+  `Id_servicio` int(11) NOT NULL,
+  `id_llamada` int(11) NOT NULL,
+  `cedula_paciente` int(8) NOT NULL,
+  `tipo_servicio` varchar(50) NOT NULL,
+  `hora_servicio` time NOT NULL,
+  `id_centro` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `vehiculo`
+--
+
+CREATE TABLE `vehiculo` (
+  `Placa` varchar(15) NOT NULL,
+  `Tipo` varchar(50) NOT NULL,
+  `Marca` varchar(50) NOT NULL,
+  `Año` int(4) NOT NULL,
+  `Modelo` varchar(50) NOT NULL,
+  `Estado` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `vehiculo`
+--
+
+INSERT INTO `vehiculo` (`Placa`, `Tipo`, `Marca`, `Año`, `Modelo`, `Estado`) VALUES
+('1010', 'Ambulancia', 'Toyota', 2018, 'Land Cruiser', 'Operativo'),
+('2020', 'Unidad Rescate', 'Ford', 2015, 'F-350', 'Operativo'),
+('3030', 'Logística', 'Chevrolet', 2012, 'Luv D-Max', 'En Mantenimiento');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `vehiculos_asignados`
+--
+
+CREATE TABLE `vehiculos_asignados` (
+  `Id_vehiculo_asignad` int(11) NOT NULL,
+  `Id_llamadas` int(11) NOT NULL,
+  `Placa` varchar(15) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `vehiculos_asignados`
+--
+
+INSERT INTO `vehiculos_asignados` (`Id_vehiculo_asignad`, `Id_llamadas`, `Placa`) VALUES
+(1, 1, '1010'),
+(2, 2, '2020');
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `centros-salud`
+--
+ALTER TABLE `centros-salud`
+  ADD PRIMARY KEY (`id_centro`);
+
+--
+-- Indices de la tabla `detalles_insumos_llamda`
+--
+ALTER TABLE `detalles_insumos_llamda`
+  ADD PRIMARY KEY (`Id_detalles`),
+  ADD KEY `Id_LLamadas` (`Id_LLamadas`),
+  ADD KEY `Id_insumos` (`Id_insumos`);
+
+--
+-- Indices de la tabla `donante_insumo`
+--
+ALTER TABLE `donante_insumo`
+  ADD PRIMARY KEY (`id_donacion`),
+  ADD KEY `id_ente` (`id_ente`),
+  ADD KEY `id_insumo` (`id_insumo`);
+
+--
+-- Indices de la tabla `ente_donante`
+--
+ALTER TABLE `ente_donante`
+  ADD PRIMARY KEY (`id_ente`);
+
+--
+-- Indices de la tabla `insumos`
+--
+ALTER TABLE `insumos`
+  ADD PRIMARY KEY (`Id_insumos`);
+
+--
+-- Indices de la tabla `llamada`
+--
+ALTER TABLE `llamada`
+  ADD PRIMARY KEY (`Id_llamadas`),
+  ADD KEY `Fk_Cedula` (`Cedula_paciente`);
+
+--
+-- Indices de la tabla `paciente`
+--
+ALTER TABLE `paciente`
+  ADD PRIMARY KEY (`Cedula`);
+
+--
+-- Indices de la tabla `personal`
+--
+ALTER TABLE `personal`
+  ADD PRIMARY KEY (`Cedula`);
+
+--
+-- Indices de la tabla `personal_asignado`
+--
+ALTER TABLE `personal_asignado`
+  ADD KEY `cedula_personal` (`cedula_personal`),
+  ADD KEY `Id_LLamadas` (`Id_LLamadas`);
+
+--
+-- Indices de la tabla `servicio`
+--
+ALTER TABLE `servicio`
+  ADD PRIMARY KEY (`Id_servicio`),
+  ADD KEY `id_llamada` (`id_llamada`),
+  ADD KEY `cedula_paciente` (`cedula_paciente`),
+  ADD KEY `id_centro` (`id_centro`);
+
+--
+-- Indices de la tabla `vehiculo`
+--
+ALTER TABLE `vehiculo`
+  ADD PRIMARY KEY (`Placa`);
+
+--
+-- Indices de la tabla `vehiculos_asignados`
+--
+ALTER TABLE `vehiculos_asignados`
+  ADD PRIMARY KEY (`Id_vehiculo_asignad`),
+  ADD KEY `Id_LLamadas` (`Id_llamadas`),
+  ADD KEY `Placa` (`Placa`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `detalles_insumos_llamda`
+--
+ALTER TABLE `detalles_insumos_llamda`
+  MODIFY `Id_detalles` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `donante_insumo`
+--
+ALTER TABLE `donante_insumo`
+  MODIFY `id_donacion` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `ente_donante`
+--
+ALTER TABLE `ente_donante`
+  MODIFY `id_ente` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `insumos`
+--
+ALTER TABLE `insumos`
+  MODIFY `Id_insumos` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `llamada`
+--
+ALTER TABLE `llamada`
+  MODIFY `Id_llamadas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `servicio`
+--
+ALTER TABLE `servicio`
+  MODIFY `Id_servicio` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `vehiculos_asignados`
+--
+ALTER TABLE `vehiculos_asignados`
+  MODIFY `Id_vehiculo_asignad` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `detalles_insumos_llamda`
+--
+ALTER TABLE `detalles_insumos_llamda`
+  ADD CONSTRAINT `detalles_insumos_llamda_ibfk_1` FOREIGN KEY (`Id_insumos`) REFERENCES `insumos` (`Id_insumos`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `detalles_insumos_llamda_ibfk_2` FOREIGN KEY (`Id_LLamadas`) REFERENCES `llamada` (`Id_llamadas`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `donante_insumo`
+--
+ALTER TABLE `donante_insumo`
+  ADD CONSTRAINT `donante_insumo_ibfk_1` FOREIGN KEY (`id_ente`) REFERENCES `ente_donante` (`id_ente`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `donante_insumo_ibfk_2` FOREIGN KEY (`id_insumo`) REFERENCES `insumos` (`Id_insumos`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `llamada`
+--
+ALTER TABLE `llamada`
+  ADD CONSTRAINT `llamada_ibfk_1` FOREIGN KEY (`Cedula_paciente`) REFERENCES `paciente` (`Cedula`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `personal_asignado`
+--
+ALTER TABLE `personal_asignado`
+  ADD CONSTRAINT `personal_asignado_ibfk_2` FOREIGN KEY (`cedula_personal`) REFERENCES `personal` (`Cedula`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `personal_asignado_ibfk_3` FOREIGN KEY (`Id_LLamadas`) REFERENCES `llamada` (`Id_llamadas`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `servicio`
+--
+ALTER TABLE `servicio`
+  ADD CONSTRAINT `servicio_ibfk_2` FOREIGN KEY (`cedula_paciente`) REFERENCES `paciente` (`Cedula`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `servicio_ibfk_3` FOREIGN KEY (`id_llamada`) REFERENCES `llamada` (`Id_llamadas`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `servicio_ibfk_4` FOREIGN KEY (`id_centro`) REFERENCES `centros-salud` (`id_centro`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `vehiculos_asignados`
+--
+ALTER TABLE `vehiculos_asignados`
+  ADD CONSTRAINT `vehiculos_asignados_ibfk_2` FOREIGN KEY (`Placa`) REFERENCES `vehiculo` (`Placa`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `vehiculos_asignados_ibfk_3` FOREIGN KEY (`Id_llamadas`) REFERENCES `llamada` (`Id_llamadas`) ON DELETE CASCADE ON UPDATE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+</file>
+
+<file path="index.php">
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require __DIR__ . '/src/router.php';
+</file>
+
+<file path="public/css/.gitkeep">
+
+</file>
+
+<file path="public/css/styles.css">
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    height: 100%;
+    color: #0f172a;
+    background: #eef2f6;
+    line-height: 1.5;
+}
+
+body.app {
+    min-height: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Estructura general
+   -------------------------------------------------------------------------- */
+
+.app-shell {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Menú lateral
+   -------------------------------------------------------------------------- */
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #6b0f0f 0%, #4a0a0a 100%);
+    color: #ffffff;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+}
+
+.sidebar__header {
+    padding: 1.5rem 1.25rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sidebar__brand-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+}
+
+.sidebar__brand-subtitle {
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.sidebar__nav {
+    flex: 1;
+    padding: 0.75rem 0 1rem;
+    overflow-y: auto;
+}
+
+.sidebar__menu,
+.nav-list {
+    list-style: none;
+}
+
+.sidebar__item,
+.nav-item {
+    margin: 0.25rem 0.75rem;
+}
+
+.sidebar__link,
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: rgba(255, 255, 255, 0.92);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar__link-icon,
+.nav-link__icon {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 0.25rem;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.sidebar__link-text,
+.nav-link__text {
+    flex: 1;
+}
+
+.sidebar__link:hover,
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.sidebar__item--active .sidebar__link,
+.nav-item--active .nav-link {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    font-weight: 600;
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: inset 3px 0 0 #fca5a5;
+}
+
+.sidebar__item--active .sidebar__link-icon,
+.nav-item--active .nav-link__icon {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.sidebar__footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sidebar__footer-text {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* --------------------------------------------------------------------------
+   Columna principal (header + contenido)
+   -------------------------------------------------------------------------- */
+
+.app-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 100vh;
+    background: #eef2f6;
+}
+
+/* --------------------------------------------------------------------------
+   Barra superior
+   -------------------------------------------------------------------------- */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    height: 64px;
+    padding: 0 1.75rem;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    z-index: 10;
+}
+
+.header__section {
+    display: flex;
+    align-items: center;
+}
+
+.header__section--title {
+    flex: 1;
+    min-width: 0;
+}
+
+.header__section--profile {
+    flex-shrink: 0;
+    margin-left: 1rem;
+}
+
+.header__module-title {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.header__profile,
+.profile-card {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.header__profile-info,
+.profile-card__info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+}
+
+.header__profile-name,
+.profile-card__name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.header__profile-role,
+.profile-card__role {
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+.header__profile-photo,
+.profile-card__avatar {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.header__profile-image,
+.profile-card__image {
+    display: block;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e2e8f0;
+}
+
+.header__profile-placeholder,
+.profile-card__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #b91c1c;
+    color: #ffffff;
+    border: 2px solid #fecaca;
+}
+
+.header__profile-initials,
+.profile-card__initials {
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+/* --------------------------------------------------------------------------
+   Contenido central
+   -------------------------------------------------------------------------- */
+
+.app-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.75rem 2rem 2rem;
+    background: #eef2f6;
+}
+
+/* --------------------------------------------------------------------------
+   Módulos (vistas inyectadas por el Router)
+   -------------------------------------------------------------------------- */
+
+.module__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.module__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.module__error {
+    padding: 1rem 1.25rem;
+    color: #991b1b;
+    background: #fef2f2;
+    border-radius: 0.5rem;
+    border: 1px solid #fecaca;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    .app-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        min-height: auto;
+        box-shadow: none;
+    }
+
+    .sidebar__nav {
+        padding-bottom: 0.5rem;
+    }
+
+    .sidebar__menu,
+    .nav-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        padding: 0 0.5rem;
+    }
+
+    .sidebar__item,
+    .nav-item {
+        margin: 0;
+    }
+
+    .header {
+        padding: 0 1rem;
+        height: auto;
+        min-height: 64px;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+    }
+
+    .app-content {
+        padding: 1.25rem 1rem 1.5rem;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Módulo: Insumos e inventario
+   -------------------------------------------------------------------------- */
+
+.insumos-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.insumos-header__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.25;
+}
+
+.insumos-header__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.625rem 1.25rem;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: #b91c1c;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(185, 28, 28, 0.35);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.insumos-header__btn:hover {
+    background: #991b1b;
+    box-shadow: 0 4px 12px rgba(185, 28, 28, 0.4);
+    transform: translateY(-1px);
+}
+
+.insumos-header__btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(185, 28, 28, 0.3);
+}
+
+.insumos-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+}
+
+.insumos-card {
+    background: #ffffff;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    border-left: 4px solid #b91c1c;
+}
+
+.insumos-card--warning {
+    border-left-width: 5px;
+    border-left-color: #eab308;
+}
+
+.insumos-card--danger {
+    border-left-width: 5px;
+    border-left-color: #dc2626;
+}
+
+.insumos-card__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.insumos-card__value {
+    margin-top: 0.5rem;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+}
+
+.insumos-card--warning .insumos-card__value {
+    color: #a16207;
+}
+
+.insumos-card--danger .insumos-card__value {
+    color: #b91c1c;
+}
+
+.insumos-table-container {
+    background: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+}
+
+.insumos-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    font-size: 0.9375rem;
+    text-align: left;
+}
+
+.insumos-table__caption {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.insumos-table__head {
+    background: #f8fafc;
+}
+
+.insumos-table__head th {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.insumos-table__body td {
+    padding: 1rem 1.25rem;
+    color: #334155;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.insumos-table__body tr:last-child td {
+    border-bottom: none;
+}
+
+.insumos-table__body tr:hover td {
+    background: #fafbfc;
+}
+
+.insumos-table__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.insumos-table__action {
+    padding: 0.375rem 0.75rem;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #b91c1c;
+    background: transparent;
+    border: 1px solid #fecaca;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.insumos-table__action:hover {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.insumos-table__badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    border-radius: 9999px;
+}
+
+.insumos-table__badge--ok {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.insumos-table__badge--warning {
+    color: #854d0e;
+    background: #fef9c3;
+}
+
+.insumos-table__badge--danger {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+@media (max-width: 768px) {
+    .insumos-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .insumos-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .insumos-header__btn {
+        width: 100%;
+    }
+
+    .insumos-table-container {
+        overflow-x: auto;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Modales (registro / edición)
+   -------------------------------------------------------------------------- */
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal.is-open {
+    display: flex;
+}
+
+.modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+}
+
+.modal__dialog {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+    padding: 1.5rem;
+}
+
+.modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.modal__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.modal__close {
+    border: none;
+    background: transparent;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.modal__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.modal__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.modal__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.modal__input {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    color: #0f172a;
+    background: #ffffff;
+}
+
+.modal__input:focus {
+    outline: none;
+    border-color: #b91c1c;
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+textarea.modal__input {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.modal__btn {
+    padding: 0.625rem 1.25rem;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+}
+
+.modal__btn--primary {
+    color: #ffffff;
+    background: #b91c1c;
+    box-shadow: 0 2px 6px rgba(185, 28, 28, 0.35);
+}
+
+.modal__btn--primary:hover {
+    background: #991b1b;
+}
+
+.modal__btn--secondary {
+    color: #334155;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+}
+
+.insumos-table__action--danger {
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.insumos-table__action--danger:hover {
+    background: #fef2f2;
+}
+</file>
+
+<file path="public/img/.gitkeep">
+
+</file>
+
+<file path="public/js/.gitkeep">
+
+</file>
+
+<file path="public/js/main.js">
+(function () {
+    function abrirModal(id) {
+        var modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarModal(modal) {
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('[data-modal-open]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            abrirModal(btn.getAttribute('data-modal-open'));
+        });
+    });
+
+    document.querySelectorAll('[data-modal-close]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            var modal = el.closest('.modal');
+            cerrarModal(modal);
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal.is-open').forEach(cerrarModal);
+        }
+    });
+
+    document.querySelectorAll('.modal.is-open').forEach(function (modal) {
+        document.body.style.overflow = 'hidden';
+    });
+})();
+</file>
+
+<file path="src/controllers/EmergenciasController.php">
+<?php
+
+namespace App\Controllers;
+
+use App\Models\Emergencia;
+use App\Models\Paciente;
+
+class EmergenciasController
+{
+    public function index($db)
+    {
+        $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
+        $modelo = new Emergencia($db);
+
+        $kpis = $modelo->obtenerConteosKPI();
+        $emergencias = $modelo->obtenerTodos($busqueda);
+        $registro = null;
+
+        if (isset($_GET['editar'])) {
+            $registro = $modelo->obtenerPorId((int) $_GET['editar']);
+        }
+
+        include 'src/views/modules/emergencias.php';
+    }
+
+    public function procesarPost($db)
+    {
+        $modelo = new Emergencia($db);
+        $modeloPaciente = new Paciente($db);
+        $accion = $_POST['accion'] ?? '';
+
+        $fecha = trim($_POST['fecha'] ?? date('Y-m-d'));
+        $hora = trim($_POST['hora'] ?? date('H:i'));
+        $fechaHora = $fecha . ' ' . $hora . ':00';
+
+        if ($accion === 'guardar') {
+            $cedula = trim($_POST['cedula_atendida'] ?? '');
+
+            if ($cedula === '') {
+                $cedula = (string) ($modeloPaciente->obtenerPrimeraCedula() ?? '');
+            }
+
+            if ($cedula !== '' && !$modeloPaciente->obtenerPorId((int) $cedula)) {
+                $modeloPaciente->crear(array(
+                    'nombres'             => 'Paciente',
+                    'apellidos'           => 'Atendido',
+                    'documento_identidad' => $cedula,
+                    'direccion'           => 'Sin especificar',
+                    'pnf'                 => 'Ninguno',
+                    'cargo'               => 'Ninguno',
+                    'tipo_paciente'       => 'Externo',
+                ));
+            }
+
+            if ($cedula !== '') {
+                $modelo->crear(array(
+                    'tipo'             => trim($_POST['tipo'] ?? 'otro'),
+                    'ubicacion'        => trim($_POST['ubicacion'] ?? ''),
+                    'descripcion'      => trim($_POST['descripcion'] ?? ''),
+                    'fecha_hora'       => $fechaHora,
+                    'cedula_paciente'  => (int) $cedula,
+                ));
+            }
+        }
+
+        if ($accion === 'actualizar') {
+            $modelo->actualizar((int) ($_POST['id_emergencia'] ?? 0), array(
+                'tipo'        => trim($_POST['tipo'] ?? 'otro'),
+                'ubicacion'   => trim($_POST['ubicacion'] ?? ''),
+                'descripcion' => trim($_POST['descripcion'] ?? ''),
+                'fecha_hora'  => $fechaHora,
+            ));
+        }
+
+        if ($accion === 'eliminar') {
+            $modelo->eliminar((int) ($_POST['id_emergencia'] ?? 0));
+        }
+    }
+}
+</file>
+
+<file path="src/controllers/InicioController.php">
+<?php
+
+namespace App\Controllers;
+
+use PDO;
+
+class InicioController
+{
+    public function index($db)
+    {
+        $stmt = $db->prepare("SELECT COUNT(*) as total FROM personal WHERE estado_personal = 'Activo'");
+        $stmt->execute();
+        $personal = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $db->prepare('SELECT COUNT(*) as total FROM insumos WHERE Estado = 0 AND Cantidad > 0');
+        $stmt->execute();
+        $insumos = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $db->prepare('SELECT COUNT(*) as total FROM llamada WHERE Fecha = CURDATE()');
+        $stmt->execute();
+        $emergenciasHoy = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $db->prepare('SELECT COUNT(*) as total FROM paciente');
+        $stmt->execute();
+        $pacientes = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $db->prepare("SELECT COUNT(*) as total FROM vehiculo WHERE Estado = 'Operativo'");
+        $stmt->execute();
+        $vehiculos = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $db->prepare('
+            SELECT COUNT(DISTINCT va.Id_llamadas) as total
+            FROM vehiculos_asignados va
+            INNER JOIN llamada l ON l.Id_llamadas = va.Id_llamadas
+            WHERE l.Fecha = CURDATE()
+        ');
+        $stmt->execute();
+        $operacionesActivas = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $db->prepare('SELECT COUNT(*) as total FROM insumos WHERE Cantidad <= 5 AND Cantidad > 0');
+        $stmt->execute();
+        $insumosBajoStock = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $dashboardData = [
+            'personal_activo'     => (int) ($personal['total'] ?? 0),
+            'insumos_disponibles' => (int) ($insumos['total'] ?? 0),
+            'emergencias_hoy'     => (int) ($emergenciasHoy['total'] ?? 0),
+            'pacientes_atendidos' => (int) ($pacientes['total'] ?? 0),
+            'vehiculos_operativos'=> (int) ($vehiculos['total'] ?? 0),
+            'operaciones_activas' => (int) ($operacionesActivas['total'] ?? 0),
+            'insumos_bajo_stock'  => (int) ($insumosBajoStock['total'] ?? 0),
+        ];
+
+        include 'src/views/modules/inicio.php';
+    }
+}
+</file>
+
+<file path="src/controllers/InsumosController.php">
+<?php
+
+namespace App\Controllers;
+
+use App\Models\Insumo;
+
+class InsumosController
+{
+    public function index($db)
+    {
+        $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
+        $modelo = new Insumo($db);
+
+        $kpis = $modelo->obtenerConteosKPI();
+        $insumos = $modelo->obtenerTodos($busqueda);
+        $categorias = $modelo->obtenerCategorias();
+        $registro = null;
+
+        if (isset($_GET['editar'])) {
+            $registro = $modelo->obtenerPorId((int) $_GET['editar']);
+        }
+
+        include 'src/views/modules/insumos.php';
+    }
+
+    public function procesarPost($db)
+    {
+        $modelo = new Insumo($db);
+        $accion = $_POST['accion'] ?? '';
+
+        if ($accion === 'guardar') {
+            $modelo->crear(array(
+                'id_categoria'      => (int) ($_POST['id_categoria'] ?? 0),
+                'codigo'            => $modelo->generarCodigo(),
+                'nombre'            => trim($_POST['nombre'] ?? ''),
+                'cantidad'          => (float) ($_POST['cantidad'] ?? 0),
+                'fecha_vencimiento' => trim($_POST['fecha_vencimiento'] ?? ''),
+                'estado'            => trim($_POST['estado'] ?? 'disponible'),
+            ));
+        }
+
+        if ($accion === 'actualizar') {
+            $modelo->actualizar((int) ($_POST['id_insumo'] ?? 0), array(
+                'id_categoria'      => (int) ($_POST['id_categoria'] ?? 0),
+                'nombre'            => trim($_POST['nombre'] ?? ''),
+                'cantidad'          => (float) ($_POST['cantidad'] ?? 0),
+                'fecha_vencimiento' => trim($_POST['fecha_vencimiento'] ?? ''),
+                'estado'            => trim($_POST['estado'] ?? 'disponible'),
+            ));
+        }
+
+        if ($accion === 'eliminar') {
+            $modelo->eliminar((int) ($_POST['id_insumo'] ?? 0));
+        }
+    }
+}
+</file>
+
+<file path="src/controllers/PacientesController.php">
+<?php
+
+namespace App\Controllers;
+
+use App\Models\Paciente;
+
+class PacientesController
+{
+    public function index($db)
+    {
+        $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
+        $modelo = new Paciente($db);
+
+        $kpis = $modelo->obtenerConteosKPI();
+        $pacientes = $modelo->obtenerTodos($busqueda);
+        $registro = null;
+
+        if (isset($_GET['editar'])) {
+            $registro = $modelo->obtenerPorId((int) $_GET['editar']);
+        }
+
+        include 'src/views/modules/pacientes.php';
+    }
+
+    public function procesarPost($db)
+    {
+        $modelo = new Paciente($db);
+        $accion = $_POST['accion'] ?? '';
+
+        $tipoPaciente = $this->resolverTipoPaciente(trim($_POST['foraneo'] ?? ''));
+
+        if ($accion === 'guardar') {
+            $modelo->crear(array(
+                'nombres'             => trim($_POST['nombres'] ?? ''),
+                'apellidos'           => trim($_POST['apellidos'] ?? ''),
+                'documento_identidad' => trim($_POST['documento_identidad'] ?? ''),
+                'direccion'           => trim($_POST['direccion'] ?? 'Sin especificar'),
+                'cargo'               => trim($_POST['cargo_extra'] ?? 'Ninguno'),
+                'pnf'                 => trim($_POST['pnf'] ?? 'Ninguno'),
+                'tipo_paciente'       => $tipoPaciente,
+            ));
+        }
+
+        if ($accion === 'actualizar') {
+            $modelo->actualizar((int) ($_POST['id_paciente'] ?? 0), array(
+                'nombres'             => trim($_POST['nombres'] ?? ''),
+                'apellidos'           => trim($_POST['apellidos'] ?? ''),
+                'direccion'           => trim($_POST['direccion'] ?? 'Sin especificar'),
+                'cargo'               => trim($_POST['cargo_extra'] ?? 'Ninguno'),
+                'pnf'                 => trim($_POST['pnf'] ?? 'Ninguno'),
+                'tipo_paciente'       => $tipoPaciente,
+            ));
+        }
+
+        if ($accion === 'eliminar') {
+            $modelo->eliminar((int) ($_POST['id_paciente'] ?? 0));
+        }
+    }
+
+    private function resolverTipoPaciente($foraneo)
+    {
+        $valor = strtolower(trim($foraneo));
+
+        if ($valor === 'sí' || $valor === 'si' || $valor === 'yes' || $valor === 'externo') {
+            return 'Externo';
+        }
+
+        return 'Interno';
+    }
+}
+</file>
+
+<file path="src/controllers/PersonalController.php">
+<?php
+
+namespace App\Controllers;
+
+use App\Models\Personal;
+
+class PersonalController
+{
+    public function index($db)
+    {
+        $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
+        $modelo = new Personal($db);
+
+        $kpis = $modelo->obtenerConteosKPI();
+        $personal = $modelo->obtenerTodos($busqueda);
+        $cargos = $modelo->obtenerCargos();
+        $registro = null;
+
+        if (isset($_GET['editar'])) {
+            $registro = $modelo->obtenerPorId((int) $_GET['editar']);
+        }
+
+        include 'src/views/modules/personal.php';
+    }
+
+    public function procesarPost($db)
+    {
+        $modelo = new Personal($db);
+        $accion = $_POST['accion'] ?? '';
+
+        if ($accion === 'guardar') {
+            $modelo->crear(array(
+                'id_cargo'            => (int) ($_POST['id_cargo'] ?? 0),
+                'nombres'             => trim($_POST['nombres'] ?? ''),
+                'apellidos'           => trim($_POST['apellidos'] ?? ''),
+                'documento_identidad' => trim($_POST['documento_identidad'] ?? ''),
+                'telefono'            => trim($_POST['telefono'] ?? ''),
+            ));
+        }
+
+        if ($accion === 'actualizar') {
+            $modelo->actualizar((int) ($_POST['id_personal'] ?? 0), array(
+                'id_cargo'            => (int) ($_POST['id_cargo'] ?? 0),
+                'nombres'             => trim($_POST['nombres'] ?? ''),
+                'apellidos'           => trim($_POST['apellidos'] ?? ''),
+                'documento_identidad' => trim($_POST['documento_identidad'] ?? ''),
+                'telefono'            => trim($_POST['telefono'] ?? ''),
+            ));
+        }
+
+        if ($accion === 'eliminar') {
+            $modelo->eliminar((int) ($_POST['id_personal'] ?? 0));
+        }
+    }
+}
+</file>
+
+<file path="src/controllers/router.php">
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+final class Router
+{
+    private const MODULO_DEFAULT = 'inicio';
+
+    /** @var list<string> */
+    private const MODULOS_PERMITIDOS = [
+        'inicio',
+        'personal',
+        'insumos',
+        'pacientes',
+        'emergencias',
+        'vehiculos',
+        'informes',
+    ];
+
+    private $projectRoot;
+
+    private $moduloActivo;
+
+    public function __construct()
+    {
+        $this->projectRoot = dirname(__DIR__, 2);
+        $this->moduloActivo = self::MODULO_DEFAULT;
+    }
+
+    public function dispatch(): void
+    {
+        $this->moduloActivo = $this->resolverModulo();
+
+        $rutaModulo = $this->rutaModulo($this->moduloActivo);
+
+        if (!is_file($rutaModulo)) {
+            $this->responderNoEncontrado();
+            return;
+        }
+
+        $contenidoModulo = $this->renderizarVista($rutaModulo);
+        $moduloActivo = $this->moduloActivo;
+
+        require $this->projectRoot . '/src/views/template.php';
+    }
+
+    private function resolverModulo(): string
+    {
+        $modulo = $_GET['modulo'] ?? self::MODULO_DEFAULT;
+
+        if (!is_string($modulo) || $modulo === '') {
+            return self::MODULO_DEFAULT;
+        }
+
+        $modulo = strtolower(trim($modulo));
+
+        if (!in_array($modulo, self::MODULOS_PERMITIDOS, true)) {
+            return self::MODULO_DEFAULT;
+        }
+
+        return $modulo;
+    }
+
+    private function rutaModulo(string $modulo): string
+    {
+        return $this->projectRoot . '/src/views/modules/' . $modulo . '.php';
+    }
+
+    private function renderizarVista(string $rutaVista): string
+    {
+        ob_start();
+        require $rutaVista;
+
+        return (string) ob_get_clean();
+    }
+
+    private function responderNoEncontrado(): void
+    {
+        http_response_code(404);
+        $contenidoModulo = '<section class="module"><p class="module__error">Módulo no encontrado.</p></section>';
+        $moduloActivo = self::MODULO_DEFAULT;
+
+        require $this->projectRoot . '/src/views/template.php';
+    }
+}
+
+(new Router())->dispatch();
+</file>
+
+<file path="src/models/Emergencia.php">
+<?php
+
+namespace App\Models;
+
+use PDO;
+
+class Emergencia extends Model
+{
+    private function sqlSelectBase()
+    {
+        return '
+            SELECT
+                l.Id_llamadas AS id_emergencia,
+                l.Tipo_emergencia AS tipo,
+                l.Ubicacion AS ubicacion,
+                l.Observaciones AS descripcion,
+                CONCAT(l.Fecha, \' \', l.Hora) AS fecha_hora,
+                l.Cedula_paciente AS cedula_paciente,
+                CASE WHEN l.Fecha = CURDATE() THEN \'reportada\' ELSE \'controlada\' END AS estado
+            FROM llamada l
+        ';
+    }
+
+    public function obtenerTodos($busqueda = '')
+    {
+        $sql = $this->sqlSelectBase();
+        $params = array();
+
+        if ($busqueda !== '') {
+            $sql .= ' WHERE l.Tipo_emergencia LIKE :busqueda OR l.Ubicacion LIKE :busqueda';
+            $params['busqueda'] = '%' . $busqueda . '%';
+        }
+
+        $sql .= ' ORDER BY l.Fecha DESC, l.Hora DESC';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerPorId($id)
+    {
+        $sql = $this->sqlSelectBase() . ' WHERE l.Id_llamadas = :id LIMIT 1';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array('id' => $id));
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerIdUsuarioDefault()
+    {
+        return 1;
+    }
+
+    public function obtenerConteosKPI()
+    {
+        $sql = '
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN Fecha = CURDATE() THEN 1 ELSE 0 END) AS activas,
+                SUM(CASE WHEN Fecha < CURDATE() THEN 1 ELSE 0 END) AS controladas
+            FROM llamada
+        ';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $fila = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return array(
+            'total'       => (int) ($fila['total'] ?? 0),
+            'activas'     => (int) ($fila['activas'] ?? 0),
+            'controladas' => (int) ($fila['controladas'] ?? 0),
+        );
+    }
+
+    private function separarFechaHora($fechaHora)
+    {
+        $timestamp = strtotime($fechaHora);
+
+        return array(
+            'fecha' => date('Y-m-d', $timestamp),
+            'hora'  => date('H:i:s', $timestamp),
+        );
+    }
+
+    public function crear($datos)
+    {
+        $partes = $this->separarFechaHora($datos['fecha_hora']);
+
+        $sql = '
+            INSERT INTO llamada (Tipo_emergencia, Fecha, Hora, Observaciones, Ubicacion, Cedula_paciente)
+            VALUES (:tipo, :fecha, :hora, :descripcion, :ubicacion, :cedula_paciente)
+        ';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array(
+            'tipo'             => $datos['tipo'],
+            'fecha'            => $partes['fecha'],
+            'hora'             => $partes['hora'],
+            'descripcion'      => $datos['descripcion'] ?? '',
+            'ubicacion'        => $datos['ubicacion'],
+            'cedula_paciente'  => (int) $datos['cedula_paciente'],
+        ));
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function actualizar($id, $datos)
+    {
+        $partes = $this->separarFechaHora($datos['fecha_hora']);
+
+        $sql = '
+            UPDATE llamada SET
+                Tipo_emergencia = :tipo,
+                Fecha = :fecha,
+                Hora = :hora,
+                Observaciones = :descripcion,
+                Ubicacion = :ubicacion
+            WHERE Id_llamadas = :id
+        ';
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute(array(
+            'tipo'        => $datos['tipo'],
+            'fecha'       => $partes['fecha'],
+            'hora'        => $partes['hora'],
+            'descripcion' => $datos['descripcion'] ?? '',
+            'ubicacion'   => $datos['ubicacion'],
+            'id'          => $id,
+        ));
+    }
+
+    public function eliminar($id)
+    {
+        $stmt = $this->db->prepare('DELETE FROM llamada WHERE Id_llamadas = :id');
+
+        return $stmt->execute(array('id' => $id));
+    }
+}
+</file>
+
+<file path="src/models/Insumo.php">
+<?php
+
+namespace App\Models;
+
+use PDO;
+
+class Insumo extends Model
+{
+    public function obtenerTodos($busqueda = '')
+    {
+        $sql = '
+            SELECT
+                i.id_insumos,
+                i.codigo,
+                i.nombre,
+                c.nombre AS categoria,
+                i.id_insumos,
+                i.cantidad,
+                i.unidad_medida AS unidad,
+                i.fecha_vencimiento,
+                i.estado,
+                i.stock_minimo
+            FROM insumos i
+            INNER JOIN Tipo_insumos c ON i.id_insumos = c.id_insumos
+        ';
+
+        $params = array();
+
+        if ($busqueda !== '') {
+            $sql .= ' WHERE i.nombre LIKE :busqueda OR i.codigo LIKE :busqueda';
+            $params['busqueda'] = '%' . $busqueda . '%';
+        }
+
+        $sql .= ' ORDER BY i.nombre ASC';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerPorId($id)
+    {
+        $stmt = $this->db->prepare('SELECT * FROM insumos WHERE id_insumo = :id LIMIT 1');
+        $stmt->execute(array('id' => $id));
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerCategorias()
+    {
+        $stmt = $this->db->prepare('SELECT DISTINCT Tipo_insumos AS nombre FROM insumos WHERE Tipo_insumos IS NOT NULL ORDER BY Tipo_insumos ASC');
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerConteosKPI()
+    {
+        $sql = '
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN cantidad <= 5 AND cantidad > 0 THEN 1 ELSE 0 END) AS bajo_stock,
+                SUM(CASE WHEN cantidad = 0 OR estado = :estado_agotado THEN 1 ELSE 0 END) AS agotados
+            FROM insumos
+        ';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array('estado_agotado' => 'agotado'));
+        $fila = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return array(
+            'total'      => (int) ($fila['total'] ?? 0),
+            'bajo_stock' => (int) ($fila['bajo_stock'] ?? 0),
+            'agotados'   => (int) ($fila['agotados'] ?? 0),
+        );
+    }
+
+    public function generarCodigo()
+    {
+        $stmt = $this->db->query('SELECT COUNT(*) FROM insumos');
+        $total = (int) $stmt->fetchColumn();
+
+        return 'INS-' . str_pad((string) ($total + 1), 3, '0', STR_PAD_LEFT);
+    }
+
+    public function crear($datos)
+    {
+        $sql = '
+            INSERT INTO insumos (id_categoria, codigo, nombre, cantidad, unidad_medida, fecha_vencimiento, estado, stock_minimo)
+            VALUES (:id_categoria, :codigo, :nombre, :cantidad, :unidad_medida, :fecha_vencimiento, :estado, :stock_minimo)
+        ';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array(
+            'id_categoria'      => $datos['id_categoria'],
+            'codigo'            => $datos['codigo'],
+            'nombre'            => $datos['nombre'],
+            'cantidad'          => $datos['cantidad'],
+            'unidad_medida'     => $datos['unidad_medida'] ?? 'unidad',
+            'fecha_vencimiento' => $datos['fecha_vencimiento'] ?: null,
+            'estado'            => $datos['estado'] ?? 'disponible',
+            'stock_minimo'      => $datos['stock_minimo'] ?? 5,
+        ));
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function actualizar($id, $datos)
+    {
+        $sql = '
+            UPDATE insumos SET
+                id_categoria = :id_categoria,
+                nombre = :nombre,
+                cantidad = :cantidad,
+                fecha_vencimiento = :fecha_vencimiento,
+                estado = :estado
+            WHERE id_insumo = :id
+        ';
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute(array(
+            'id_categoria'      => $datos['id_categoria'],
+            'nombre'            => $datos['nombre'],
+            'cantidad'          => $datos['cantidad'],
+            'fecha_vencimiento' => $datos['fecha_vencimiento'] ?: null,
+            'estado'            => $datos['estado'],
+            'id'                => $id,
+        ));
+    }
+
+    public function eliminar($id)
+    {
+        $stmt = $this->db->prepare('DELETE FROM insumos WHERE id_insumo = :id');
+
+        return $stmt->execute(array('id' => $id));
+    }
+}
+</file>
+
+<file path="src/models/Model.php">
+<?php
+
+namespace App\Models;
+
+abstract class Model {
+    protected $db;
+
+    public function __construct($db) {
+        $this->db = $db;
+    }
+}
+</file>
+
+<file path="src/models/Paciente.php">
+<?php
+
+namespace App\Models;
+
+use PDO;
+
+class Paciente extends Model
+{
+    private function sqlSelectBase()
+    {
+        return '
+            SELECT
+                p.Cedula AS id_paciente,
+                p.Cedula AS documento_identidad,
+                p.Nombre AS nombres,
+                p.Apellido AS apellidos,
+                p.Direccion AS direccion,
+                p.PNF AS pnf,
+                p.Cargo AS cargo,
+                p.tipo_paciente AS tipo_paciente,
+                p.tipo_paciente AS estado,
+                (
+                    SELECT l.Id_llamadas
+                    FROM llamada l
+                    WHERE l.Cedula_paciente = p.Cedula
+                    ORDER BY l.Fecha DESC, l.Hora DESC
+                    LIMIT 1
+                ) AS id_emergencia,
+                (
+                    SELECT CONCAT(l.Fecha, \' \', l.Hora)
+                    FROM llamada l
+                    WHERE l.Cedula_paciente = p.Cedula
+                    ORDER BY l.Fecha DESC, l.Hora DESC
+                    LIMIT 1
+                ) AS fecha_atencion,
+                CONCAT(
+                    \'Cargo: \', p.Cargo,
+                    \' | PNF: \', p.PNF,
+                    \' | Foráneo: \',
+                    CASE WHEN p.tipo_paciente = \'Externo\' THEN \'Sí\' ELSE \'No\' END
+                ) AS observaciones
+            FROM paciente p
+        ';
+    }
+
+    public function obtenerTodos($busqueda = '')
+    {
+        $sql = $this->sqlSelectBase();
+        $params = array();
+
+        if ($busqueda !== '') {
+            $sql .= ' WHERE p.Nombre LIKE :busqueda OR p.Apellido LIKE :busqueda OR CAST(p.Cedula AS CHAR) LIKE :busqueda';
+            $params['busqueda'] = '%' . $busqueda . '%';
+        }
+
+        $sql .= ' ORDER BY p.Cedula DESC';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerPorId($id)
+    {
+        $sql = $this->sqlSelectBase() . ' WHERE p.Cedula = :id LIMIT 1';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array('id' => $id));
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerPrimeraCedula()
+    {
+        $stmt = $this->db->query('SELECT Cedula FROM paciente ORDER BY Cedula ASC LIMIT 1');
+        $cedula = $stmt->fetchColumn();
+
+        return $cedula ? (int) $cedula : null;
+    }
+
+    public function obtenerUltimaEmergenciaId()
+    {
+        $stmt = $this->db->query('SELECT Id_llamadas FROM llamada ORDER BY Id_llamadas DESC LIMIT 1');
+        $id = $stmt->fetchColumn();
+
+        return $id ? (int) $id : null;
+    }
+
+    public function obtenerConteosKPI()
+    {
+        $sql = '
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN tipo_paciente = :tipo_interno THEN 1 ELSE 0 END) AS atendidos,
+                SUM(CASE WHEN tipo_paciente = :tipo_externo THEN 1 ELSE 0 END) AS en_observacion
+            FROM paciente
+        ';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array(
+            'tipo_interno'  => 'Interno',
+            'tipo_externo'  => 'Externo',
+        ));
+
+        $fila = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return array(
+            'total'          => (int) ($fila['total'] ?? 0),
+            'atendidos'      => (int) ($fila['atendidos'] ?? 0),
+            'en_observacion' => (int) ($fila['en_observacion'] ?? 0),
+        );
+    }
+
+    public function crear($datos)
+    {
+        $sql = '
+            INSERT INTO paciente (Cedula, Nombre, Apellido, Direccion, PNF, Cargo, tipo_paciente)
+            VALUES (:cedula, :nombres, :apellidos, :direccion, :pnf, :cargo, :tipo_paciente)
+        ';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array(
+            'cedula'        => (int) $datos['documento_identidad'],
+            'nombres'       => $datos['nombres'],
+            'apellidos'     => $datos['apellidos'] ?? '',
+            'direccion'     => $datos['direccion'] ?? 'Sin especificar',
+            'pnf'           => $datos['pnf'] ?? 'Ninguno',
+            'cargo'         => $datos['cargo'] ?? 'Ninguno',
+            'tipo_paciente' => $datos['tipo_paciente'] ?? 'Interno',
+        ));
+
+        return (int) $datos['documento_identidad'];
+    }
+
+    public function actualizar($id, $datos)
+    {
+        $sql = '
+            UPDATE paciente SET
+                Nombre = :nombres,
+                Apellido = :apellidos,
+                Direccion = :direccion,
+                PNF = :pnf,
+                Cargo = :cargo,
+                tipo_paciente = :tipo_paciente
+            WHERE Cedula = :id
+        ';
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute(array(
+            'nombres'       => $datos['nombres'],
+            'apellidos'     => $datos['apellidos'] ?? '',
+            'direccion'     => $datos['direccion'] ?? 'Sin especificar',
+            'pnf'           => $datos['pnf'] ?? 'Ninguno',
+            'cargo'         => $datos['cargo'] ?? 'Ninguno',
+            'tipo_paciente' => $datos['tipo_paciente'] ?? 'Interno',
+            'id'            => $id,
+        ));
+    }
+
+    public function eliminar($id)
+    {
+        $stmt = $this->db->prepare('DELETE FROM paciente WHERE Cedula = :id');
+
+        return $stmt->execute(array('id' => $id));
+    }
+}
+</file>
+
+<file path="src/models/Personal.php">
+<?php
+
+namespace App\Models;
+
+use PDO;
+
+class Personal extends Model
+{
+    private function obtenerRangosCatalogo()
+    {
+        return array(
+            1 => 'Sargento',
+            2 => 'Cabo Primero',
+            3 => 'Cabo Segundo',
+            4 => 'Distinguido',
+            5 => 'Teniente',
+            6 => 'Capitán',
+        );
+    }
+
+    private function rangoDesdeIdCargo($idCargo)
+    {
+        $catalogo = $this->obtenerRangosCatalogo();
+
+        return $catalogo[(int) $idCargo] ?? 'Distinguido';
+    }
+
+    private function idCargoDesdeRango($rango)
+    {
+        foreach ($this->obtenerRangosCatalogo() as $id => $nombre) {
+            if ($nombre === $rango) {
+                return $id;
+            }
+        }
+
+        return 4;
+    }
+
+    private function mapearFila($fila)
+    {
+        if (!$fila) {
+            return $fila;
+        }
+
+        $fila['id_cargo'] = $this->idCargoDesdeRango($fila['rango'] ?? '');
+
+        return $fila;
+    }
+
+    private function sqlSelectBase()
+    {
+        return '
+            SELECT
+                p.Cedula AS id_personal,
+                p.Cedula AS documento_identidad,
+                p.Cedula AS cedula,
+                p.Nombre AS nombres,
+                p.Apellido AS apellidos,
+                p.Rango AS rango,
+                p.Telefono AS telefono,
+                p.estado_personal AS estado
+            FROM personal p
+        ';
+    }
+
+    public function obtenerTodos($busqueda = '')
+    {
+        $sql = $this->sqlSelectBase();
+        $params = array();
+
+        if ($busqueda !== '') {
+            $sql .= ' WHERE p.Nombre LIKE :busqueda OR p.Apellido LIKE :busqueda OR CAST(p.Cedula AS CHAR) LIKE :busqueda';
+            $params['busqueda'] = '%' . $busqueda . '%';
+        }
+
+        $sql .= ' ORDER BY p.Apellido, p.Nombre ASC';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return array_map(array($this, 'mapearFila'), $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    public function obtenerPorId($id)
+    {
+        $sql = $this->sqlSelectBase() . ' WHERE p.Cedula = :id LIMIT 1';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array('id' => $id));
+
+        return $this->mapearFila($stmt->fetch(PDO::FETCH_ASSOC));
+    }
+
+    public function obtenerCargos()
+    {
+        $resultado = array();
+
+        foreach ($this->obtenerRangosCatalogo() as $id => $nombre) {
+            $resultado[] = array(
+                'id_cargo' => $id,
+                'nombre'   => $nombre,
+            );
+        }
+
+        return $resultado;
+    }
+
+    public function obtenerConteosKPI()
+    {
+        $sql = '
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN estado_personal = :estado_activo THEN 1 ELSE 0 END) AS activos,
+                SUM(CASE WHEN estado_personal <> :estado_activo THEN 1 ELSE 0 END) AS en_servicio
+            FROM personal
+        ';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array('estado_activo' => 'Activo'));
+
+        $fila = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return array(
+            'total'       => (int) ($fila['total'] ?? 0),
+            'activos'     => (int) ($fila['activos'] ?? 0),
+            'en_servicio' => (int) ($fila['en_servicio'] ?? 0),
+        );
+    }
+
+    public function crear($datos)
+    {
+        $sql = '
+            INSERT INTO personal (Cedula, Rango, Nombre, Apellido, Telefono, estado_personal)
+            VALUES (:cedula, :rango, :nombres, :apellidos, :telefono, :estado)
+        ';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(array(
+            'cedula'    => (int) $datos['documento_identidad'],
+            'rango'     => $this->rangoDesdeIdCargo($datos['id_cargo']),
+            'nombres'   => $datos['nombres'],
+            'apellidos' => $datos['apellidos'],
+            'telefono'  => $datos['telefono'] ?? '',
+            'estado'    => 'Activo',
+        ));
+
+        return (int) $datos['documento_identidad'];
+    }
+
+    public function actualizar($id, $datos)
+    {
+        $sql = '
+            UPDATE personal SET
+                Rango = :rango,
+                Nombre = :nombres,
+                Apellido = :apellidos,
+                Telefono = :telefono
+            WHERE Cedula = :id
+        ';
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute(array(
+            'rango'     => $this->rangoDesdeIdCargo($datos['id_cargo']),
+            'nombres'   => $datos['nombres'],
+            'apellidos' => $datos['apellidos'],
+            'telefono'  => $datos['telefono'] ?? '',
+            'id'        => $id,
+        ));
+    }
+
+    public function eliminar($id)
+    {
+        $stmt = $this->db->prepare('DELETE FROM personal WHERE Cedula = :id');
+
+        return $stmt->execute(array('id' => $id));
+    }
+}
+</file>
+
+<file path="src/views/components/header.php">
+<?php
+
+declare(strict_types=1);
+
+/** @var string $moduloActivo */
+$moduloActivo = $moduloActivo ?? 'inicio';
+
+$titulosModulo = [
+    'inicio'      => 'Inicio',
+    'personal'    => 'Personal',
+    'insumos'     => 'Insumos',
+    'pacientes'   => 'Pacientes',
+    'emergencias' => 'Emergencias',
+    'vehiculos'   => 'Vehículos',
+    'informes'    => 'Informes',
+];
+
+$tituloModulo = $titulosModulo[$moduloActivo] ?? ucfirst($moduloActivo);
+
+$usuarioNombre = $usuarioNombre ?? 'Oficial Abdiel';
+$usuarioRol    = $usuarioRol ?? 'Administrador';
+$usuarioFoto   = $usuarioFoto ?? null;
+$usuarioIniciales = $usuarioIniciales ?? 'OA';
+?>
+<header class="header" id="header" role="banner">
+    <section class="header__section header__section--title" aria-labelledby="header-module-title">
+        <h1 class="header__module-title" id="header-module-title">
+            <?= htmlspecialchars($tituloModulo, ENT_QUOTES, 'UTF-8') ?>
+        </h1>
+    </section>
+
+    <section class="header__section header__section--profile" aria-label="Perfil de usuario">
+        <div class="header__profile profile-card">
+            <div class="header__profile-info profile-card__info">
+                <p class="header__profile-name profile-card__name">
+                    <?= htmlspecialchars($usuarioNombre, ENT_QUOTES, 'UTF-8') ?>
+                </p>
+                <p class="header__profile-role profile-card__role">
+                    <?= htmlspecialchars($usuarioRol, ENT_QUOTES, 'UTF-8') ?>
+                </p>
+            </div>
+
+            <figure class="header__profile-photo profile-card__avatar">
+                <?php if ($usuarioFoto !== null && $usuarioFoto !== ''): ?>
+                    <img
+                        src="<?= htmlspecialchars($usuarioFoto, ENT_QUOTES, 'UTF-8') ?>"
+                        alt="Foto de perfil de <?= htmlspecialchars($usuarioNombre, ENT_QUOTES, 'UTF-8') ?>"
+                        class="header__profile-image profile-card__image"
+                    >
+                <?php else: ?>
+                    <div
+                        class="header__profile-placeholder profile-card__placeholder"
+                        role="img"
+                        aria-label="Foto de perfil no disponible"
+                    >
+                        <span class="header__profile-initials profile-card__initials">
+                            <?= htmlspecialchars($usuarioIniciales, ENT_QUOTES, 'UTF-8') ?>
+                        </span>
+                    </div>
+                <?php endif; ?>
+            </figure>
+        </div>
+    </section>
+</header>
+</file>
+
+<file path="src/views/components/sidebar.php">
+<?php
+
+declare(strict_types=1);
+
+/** @var string $moduloActivo */
+$moduloActivo = $moduloActivo ?? 'inicio';
+
+$menuItems = [
+  ['modulo' => 'inicio',      'etiqueta' => 'Inicio',       'aria' => 'Panel de control'],
+  ['modulo' => 'personal',    'etiqueta' => 'Personal',     'aria' => 'Gestión de personal y bomberos'],
+  ['modulo' => 'insumos',     'etiqueta' => 'Insumos',      'aria' => 'Gestión de insumos e inventario'],
+  ['modulo' => 'pacientes',   'etiqueta' => 'Pacientes',    'aria' => 'Gestión de pacientes atendidos'],
+  ['modulo' => 'emergencias', 'etiqueta' => 'Emergencias',  'aria' => 'Registro de emergencias'],
+  ['modulo' => 'vehiculos',   'etiqueta' => 'Vehículos',    'aria' => 'Gestión de vehículos'],
+  ['modulo' => 'informes',    'etiqueta' => 'Informes',     'aria' => 'Generación de informes'],
+];
+?>
+<aside class="sidebar" id="sidebar" role="complementary" aria-label="Menú lateral del sistema">
+    <div class="sidebar__header">
+        <p class="sidebar__brand-title">Bomberos</p>
+        <p class="sidebar__brand-subtitle">Gestión integral</p>
+    </div>
+
+    <nav class="sidebar__nav" aria-label="Navegación principal">
+        <ul class="sidebar__menu nav-list">
+            <?php foreach ($menuItems as $item): ?>
+                <?php
+                $esActivo = $moduloActivo === $item['modulo'];
+                $claseItem = 'sidebar__item nav-item' . ($esActivo ? ' sidebar__item--active nav-item--active' : '');
+                $url = '?modulo=' . rawurlencode($item['modulo']);
+                ?>
+                <li class="<?= htmlspecialchars($claseItem, ENT_QUOTES, 'UTF-8') ?>">
+                    <a
+                        href="<?= htmlspecialchars($url, ENT_QUOTES, 'UTF-8') ?>"
+                        class="sidebar__link nav-link"
+                        <?= $esActivo ? 'aria-current="page"' : '' ?>
+                        aria-label="<?= htmlspecialchars($item['aria'], ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                        <span class="sidebar__link-icon nav-link__icon" aria-hidden="true"></span>
+                        <span class="sidebar__link-text nav-link__text">
+                            <?= htmlspecialchars($item['etiqueta'], ENT_QUOTES, 'UTF-8') ?>
+                        </span>
+                    </a>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </nav>
+
+    <footer class="sidebar__footer">
+        <p class="sidebar__footer-text">Sistema de inventario</p>
+    </footer>
+</aside>
+</file>
+
+<file path="src/views/modules/emergencias.php">
+<?php
+$esEdicion = !empty($registro);
+$accionForm = $esEdicion ? 'actualizar' : 'guardar';
+$tituloModal = $esEdicion ? 'Editar Emergencia' : 'Registrar Emergencia';
+$textoBoton = $esEdicion ? 'Actualizar' : 'Registrar';
+$busqueda = $busqueda ?? '';
+$fechaReg = $horaReg = '';
+if ($esEdicion && !empty($registro['fecha_hora'])) {
+    $fechaReg = date('Y-m-d', strtotime($registro['fecha_hora']));
+    $horaReg = date('H:i', strtotime($registro['fecha_hora']));
+}
+?>
+<section class="module module--emergencias">
+    <header class="insumos-header">
+        <h1 class="insumos-header__title">Gestión de Emergencias / Incidentes</h1>
+        <button type="button" class="insumos-header__btn" data-modal-open="modal-emergencias">+ Nueva emergencia</button>
+    </header>
+
+    <form method="GET" class="module-search" style="margin-bottom: 1rem; display: flex; gap: 8px; flex-wrap: wrap;">
+        <input type="hidden" name="modulo" value="emergencias">
+        <input type="text" name="busqueda" placeholder="Buscar por tipo o ubicación..." value="<?= htmlspecialchars($busqueda); ?>" style="flex:1;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:0.5rem;">
+        <button type="submit" class="insumos-table__action">Buscar</button>
+    </form>
+
+    <div class="insumos-cards" role="group" aria-label="Indicadores de emergencias">
+        <article class="insumos-card"><h2 class="insumos-card__label">Total Emergencias</h2><p class="insumos-card__value"><?= (int) ($kpis['total'] ?? 0); ?></p></article>
+        <article class="insumos-card insumos-card--warning"><h2 class="insumos-card__label">Alertas Activas</h2><p class="insumos-card__value"><?= (int) ($kpis['activas'] ?? 0); ?></p></article>
+        <article class="insumos-card insumos-card--danger"><h2 class="insumos-card__label">Controladas / Archivadas</h2><p class="insumos-card__value"><?= (int) ($kpis['controladas'] ?? 0); ?></p></article>
+    </div>
+
+    <div class="insumos-table-container">
+        <table class="insumos-table">
+            <thead class="insumos-table__head">
+                <tr>
+                    <th scope="col">Código</th><th scope="col">Tipo de Incidente</th><th scope="col">Lugar / Dirección</th>
+                    <th scope="col">Fecha y Hora</th><th scope="col">Estado</th><th scope="col">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="insumos-table__body">
+                <?php if (empty($emergencias)): ?>
+                    <tr><td colspan="6" style="text-align:center;padding:30px;color:#666;">No hay emergencias registradas en el sistema.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($emergencias as $incidente): ?>
+                        <?php
+                        $estado = strtolower(trim($incidente['estado'] ?? 'reportada'));
+                        $claseBadge = in_array($estado, array('controlada','cerrada','finalizada'), true) ? 'insumos-table__badge insumos-table__badge--ok' : 'insumos-table__badge insumos-table__badge--warning';
+                        ?>
+                        <tr>
+                            <td><?= (int) ($incidente['id_emergencia'] ?? 0); ?></td>
+                            <td><?= htmlspecialchars($incidente['tipo'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars($incidente['ubicacion'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars($incidente['fecha_hora'] ?? ''); ?></td>
+                            <td><span class="<?= $claseBadge; ?>"><?= htmlspecialchars($incidente['estado'] ?? ''); ?></span></td>
+                            <td>
+                                <div class="insumos-table__actions">
+                                    <a href="index.php?modulo=emergencias&amp;editar=<?= (int) ($incidente['id_emergencia'] ?? 0); ?>" class="insumos-table__action">Editar</a>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('¿Eliminar esta emergencia?');">
+                                        <input type="hidden" name="modulo" value="emergencias"><input type="hidden" name="accion" value="eliminar">
+                                        <input type="hidden" name="id_emergencia" value="<?= (int) ($incidente['id_emergencia'] ?? 0); ?>">
+                                        <button type="submit" class="insumos-table__action insumos-table__action--danger" title="Eliminar">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="modal<?= $esEdicion ? ' is-open' : ''; ?>" id="modal-emergencias" aria-hidden="<?= $esEdicion ? 'false' : 'true'; ?>">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog" role="dialog">
+        <div class="modal__header">
+            <h2 class="modal__title"><?= htmlspecialchars($tituloModal); ?></h2>
+            <button type="button" class="modal__close" data-modal-close>&times;</button>
+        </div>
+        <form method="POST" class="modal__form">
+            <input type="hidden" name="modulo" value="emergencias">
+            <input type="hidden" name="accion" value="<?= $accionForm; ?>">
+            <?php if ($esEdicion): ?><input type="hidden" name="id_emergencia" value="<?= (int) ($registro['id_emergencia'] ?? 0); ?>"><input type="hidden" name="estado" value="<?= htmlspecialchars($registro['estado'] ?? 'reportada'); ?>"><?php endif; ?>
+            <div class="modal__field">
+                <label class="modal__label">Tipo de Emergencia</label>
+                <select class="modal__input" name="tipo" required>
+                    <?php foreach (array('incendio','rescate','accidente_transito','fuga_gas','inundacion','medica','otro') as $t): ?>
+                        <option value="<?= $t; ?>"<?= ($esEdicion && ($registro['tipo'] ?? '') === $t) ? ' selected' : ''; ?>><?= ucfirst(str_replace('_',' ',$t)); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="modal__field"><label class="modal__label">Fecha</label><input class="modal__input" type="date" name="fecha" required value="<?= htmlspecialchars($fechaReg ?: date('Y-m-d')); ?>"></div>
+            <div class="modal__field"><label class="modal__label">Hora</label><input class="modal__input" type="time" name="hora" required value="<?= htmlspecialchars($horaReg ?: date('H:i')); ?>"></div>
+            <div class="modal__field"><label class="modal__label">Ubicación</label><input class="modal__input" type="text" name="ubicacion" required value="<?= htmlspecialchars($registro['ubicacion'] ?? ''); ?>"></div>
+            <div class="modal__field"><label class="modal__label">Observación</label><textarea class="modal__input" name="descripcion" rows="3"><?= htmlspecialchars($registro['descripcion'] ?? ''); ?></textarea></div>
+            <?php if (!$esEdicion): ?>
+            <div class="modal__field"><label class="modal__label">Cédula de Persona Atendida</label><input class="modal__input" type="text" name="cedula_atendida" placeholder="Opcional"></div>
+            <?php endif; ?>
+            <div class="modal__footer">
+                <button type="button" class="modal__btn modal__btn--secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="modal__btn modal__btn--primary"><?= htmlspecialchars($textoBoton); ?></button>
+            </div>
+        </form>
+    </div>
+</div>
+</file>
+
+<file path="src/views/modules/pacientes.php">
+<?php
+$esEdicion = !empty($registro);
+$accionForm = $esEdicion ? 'actualizar' : 'guardar';
+$tituloModal = $esEdicion ? 'Editar Paciente' : 'Registrar Paciente';
+$textoBoton = $esEdicion ? 'Actualizar' : 'Registrar';
+$busqueda = $busqueda ?? '';
+$cargoExtra = $pnf = $foraneo = '';
+if ($esEdicion && !empty($registro['observaciones'])) {
+    $obs = $registro['observaciones'];
+    if (preg_match('/Cargo:\s*([^|]+)/', $obs, $m)) { $cargoExtra = trim($m[1]); }
+    if (preg_match('/PNF:\s*([^|]+)/', $obs, $m)) { $pnf = trim($m[1]); }
+    if (preg_match('/Foráneo:\s*(.+)$/u', $obs, $m)) { $foraneo = trim($m[1]); }
+}
+?>
+<section class="module module--pacientes">
+    <header class="insumos-header">
+        <h1 class="insumos-header__title">Gestión de Pacientes Atendidos</h1>
+        <button type="button" class="insumos-header__btn" data-modal-open="modal-pacientes">+ Registrar paciente</button>
+    </header>
+
+    <form method="GET" class="module-search" style="margin-bottom: 1rem; display: flex; gap: 8px; flex-wrap: wrap;">
+        <input type="hidden" name="modulo" value="pacientes">
+        <input type="text" name="busqueda" placeholder="Buscar por nombre, apellido o cédula..." value="<?= htmlspecialchars($busqueda); ?>" style="flex:1;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:0.5rem;">
+        <button type="submit" class="insumos-table__action">Buscar</button>
+    </form>
+
+    <div class="insumos-cards" role="group" aria-label="Indicadores de pacientes">
+        <article class="insumos-card"><h2 class="insumos-card__label">Total Pacientes</h2><p class="insumos-card__value"><?= (int) $kpis['total']; ?></p></article>
+        <article class="insumos-card insumos-card--warning"><h2 class="insumos-card__label">Pacientes Atendidos</h2><p class="insumos-card__value"><?= (int) $kpis['atendidos']; ?></p></article>
+        <article class="insumos-card insumos-card--danger"><h2 class="insumos-card__label">En Observación / Traslado</h2><p class="insumos-card__value"><?= (int) $kpis['en_observacion']; ?></p></article>
+    </div>
+
+    <div class="insumos-table-container">
+        <table class="insumos-table">
+            <thead class="insumos-table__head">
+                <tr>
+                    <th scope="col">ID</th><th scope="col">Nombre</th><th scope="col">Documento</th>
+                    <th scope="col">Emergencia</th><th scope="col">Fecha Atención</th><th scope="col">Estado</th><th scope="col">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="insumos-table__body">
+                <?php if (empty($pacientes)): ?>
+                    <tr><td colspan="7" style="text-align:center;padding:30px;color:#666;">No hay pacientes registrados en el sistema.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($pacientes as $paciente): ?>
+                        <?php
+                        $estado = strtolower(trim($paciente['estado'] ?? 'estable'));
+                        $claseBadge = in_array($estado, array('estable','atendido','alta'), true) ? 'insumos-table__badge insumos-table__badge--ok' : 'insumos-table__badge insumos-table__badge--warning';
+                        ?>
+                        <tr>
+                            <td><?= (int) ($paciente['id_paciente'] ?? 0); ?></td>
+                            <td><?= htmlspecialchars(trim(($paciente['nombres'] ?? '') . ' ' . ($paciente['apellidos'] ?? ''))); ?></td>
+                            <td><?= htmlspecialchars($paciente['documento_identidad'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars((string) ($paciente['id_emergencia'] ?? 'N/A')); ?></td>
+                            <td><?= htmlspecialchars($paciente['fecha_atencion'] ?? 'No registrada'); ?></td>
+                            <td><span class="<?= $claseBadge; ?>"><?= htmlspecialchars($paciente['estado'] ?? ''); ?></span></td>
+                            <td>
+                                <div class="insumos-table__actions">
+                                    <a href="index.php?modulo=pacientes&amp;editar=<?= (int) ($paciente['id_paciente'] ?? 0); ?>" class="insumos-table__action">Editar</a>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('¿Eliminar este paciente?');">
+                                        <input type="hidden" name="modulo" value="pacientes"><input type="hidden" name="accion" value="eliminar">
+                                        <input type="hidden" name="id_paciente" value="<?= (int) ($paciente['id_paciente'] ?? 0); ?>">
+                                        <button type="submit" class="insumos-table__action insumos-table__action--danger" title="Eliminar">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="modal<?= $esEdicion ? ' is-open' : ''; ?>" id="modal-pacientes" aria-hidden="<?= $esEdicion ? 'false' : 'true'; ?>">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog" role="dialog">
+        <div class="modal__header">
+            <h2 class="modal__title"><?= htmlspecialchars($tituloModal); ?></h2>
+            <button type="button" class="modal__close" data-modal-close>&times;</button>
+        </div>
+        <form method="POST" class="modal__form">
+            <input type="hidden" name="modulo" value="pacientes">
+            <input type="hidden" name="accion" value="<?= $accionForm; ?>">
+            <?php if ($esEdicion): ?><input type="hidden" name="id_paciente" value="<?= (int) ($registro['id_paciente'] ?? 0); ?>"><input type="hidden" name="estado" value="<?= htmlspecialchars($registro['estado'] ?? 'estable'); ?>"><?php endif; ?>
+            <div class="modal__field"><label class="modal__label">Nombre</label><input class="modal__input" type="text" name="nombres" required value="<?= htmlspecialchars($registro['nombres'] ?? ''); ?>"></div>
+            <div class="modal__field"><label class="modal__label">Apellido</label><input class="modal__input" type="text" name="apellidos" value="<?= htmlspecialchars($registro['apellidos'] ?? ''); ?>"></div>
+            <div class="modal__field"><label class="modal__label">Cédula</label><input class="modal__input" type="text" name="documento_identidad" value="<?= htmlspecialchars($registro['documento_identidad'] ?? ''); ?>"></div>
+            <div class="modal__field"><label class="modal__label">Cargo</label><input class="modal__input" type="text" name="cargo_extra" value="<?= htmlspecialchars($cargoExtra); ?>"></div>
+            <div class="modal__field"><label class="modal__label">PNF</label><input class="modal__input" type="text" name="pnf" value="<?= htmlspecialchars($pnf); ?>"></div>
+            <div class="modal__field"><label class="modal__label">Foráneo</label><input class="modal__input" type="text" name="foraneo" value="<?= htmlspecialchars($foraneo); ?>"></div>
+            <div class="modal__footer">
+                <button type="button" class="modal__btn modal__btn--secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="modal__btn modal__btn--primary"><?= htmlspecialchars($textoBoton); ?></button>
+            </div>
+        </form>
+    </div>
+</div>
+</file>
+
+<file path="src/views/modules/personal.php">
+<?php
+$esEdicion = !empty($registro);
+$accionForm = $esEdicion ? 'actualizar' : 'guardar';
+$tituloModal = $esEdicion ? 'Editar Personal' : 'Registrar Personal';
+$textoBoton = $esEdicion ? 'Actualizar' : 'Registrar';
+$busqueda = $busqueda ?? '';
+?>
+<section class="module module--personal">
+    <header class="insumos-header">
+        <h1 class="insumos-header__title">Gestión de Personal / Bomberos</h1>
+        <button type="button" class="insumos-header__btn" data-modal-open="modal-personal">
+            + Agregar personal
+        </button>
+    </header>
+
+    <form method="GET" class="module-search" style="margin-bottom: 1rem; display: flex; gap: 8px; flex-wrap: wrap;">
+        <input type="hidden" name="modulo" value="personal">
+        <input type="text" name="busqueda" class="module-search__input" placeholder="Buscar por nombre, apellido o cédula..." value="<?= htmlspecialchars($busqueda); ?>" style="flex:1;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:0.5rem;">
+        <button type="submit" class="insumos-table__action">Buscar</button>
+    </form>
+
+    <div class="insumos-cards" role="group" aria-label="Indicadores de personal">
+        <article class="insumos-card">
+            <h2 class="insumos-card__label">Total Personal</h2>
+            <p class="insumos-card__value"><?= (int) $kpis['total']; ?></p>
+        </article>
+        <article class="insumos-card insumos-card--warning">
+            <h2 class="insumos-card__label">Personal Activo</h2>
+            <p class="insumos-card__value"><?= (int) $kpis['activos']; ?></p>
+        </article>
+        <article class="insumos-card insumos-card--danger">
+            <h2 class="insumos-card__label">En Servicio / Guardia</h2>
+            <p class="insumos-card__value"><?= (int) $kpis['en_servicio']; ?></p>
+        </article>
+    </div>
+
+    <div class="insumos-table-container">
+        <table class="insumos-table">
+            <thead class="insumos-table__head">
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Rango</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Contacto</th>
+                    <th scope="col">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="insumos-table__body">
+                <?php if (empty($personal)): ?>
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 30px; color: #666;">No hay registros de personal en el sistema.</td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($personal as $bombero): ?>
+                        <?php
+                        $estado = $bombero['estado'] ?? 'inactivo';
+                        $estadoNormalizado = strtolower(trim($estado));
+                        $estadosVerde = array('activo', 'en servicio', 'en_servicio', 'guardia');
+                        $claseBadge = in_array($estadoNormalizado, $estadosVerde, true)
+                            ? 'insumos-table__badge insumos-table__badge--ok'
+                            : 'insumos-table__badge insumos-table__badge--warning';
+                        ?>
+                        <tr>
+                            <td><?= htmlspecialchars($bombero['documento_identidad'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars(trim(($bombero['nombres'] ?? '') . ' ' . ($bombero['apellidos'] ?? ''))); ?></td>
+                            <td><?= htmlspecialchars($bombero['rango'] ?? ''); ?></td>
+                            <td><span class="<?= $claseBadge; ?>"><?= htmlspecialchars($estado); ?></span></td>
+                            <td><?= htmlspecialchars($bombero['telefono'] ?? ''); ?></td>
+                            <td>
+                                <div class="insumos-table__actions">
+                                    <a href="index.php?modulo=personal&amp;editar=<?= (int) ($bombero['id_personal'] ?? 0); ?><?= $busqueda !== '' ? '&amp;busqueda=' . urlencode($busqueda) : ''; ?>" class="insumos-table__action">Editar</a>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('¿Eliminar este registro de personal?');">
+                                        <input type="hidden" name="modulo" value="personal">
+                                        <input type="hidden" name="accion" value="eliminar">
+                                        <input type="hidden" name="busqueda_retorno" value="<?= htmlspecialchars($busqueda); ?>">
+                                        <input type="hidden" name="id_personal" value="<?= (int) ($bombero['id_personal'] ?? 0); ?>">
+                                        <button type="submit" class="insumos-table__action insumos-table__action--danger" title="Eliminar">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="modal<?= $esEdicion ? ' is-open' : ''; ?>" id="modal-personal" aria-hidden="<?= $esEdicion ? 'false' : 'true'; ?>">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog" role="dialog" aria-labelledby="modal-personal-title">
+        <div class="modal__header">
+            <h2 class="modal__title" id="modal-personal-title"><?= htmlspecialchars($tituloModal); ?></h2>
+            <button type="button" class="modal__close" data-modal-close aria-label="Cerrar">&times;</button>
+        </div>
+        <form method="POST" class="modal__form">
+            <input type="hidden" name="modulo" value="personal">
+            <input type="hidden" name="accion" value="<?= $accionForm; ?>">
+            <input type="hidden" name="busqueda_retorno" value="<?= htmlspecialchars($busqueda); ?>">
+            <?php if ($esEdicion): ?>
+                <input type="hidden" name="id_personal" value="<?= (int) ($registro['id_personal'] ?? 0); ?>">
+            <?php endif; ?>
+            <div class="modal__field">
+                <label class="modal__label" for="personal-cedula">Cédula</label>
+                <input class="modal__input" type="text" id="personal-cedula" name="documento_identidad" required value="<?= htmlspecialchars($registro['documento_identidad'] ?? ''); ?>">
+            </div>
+            <div class="modal__field">
+                <label class="modal__label" for="personal-cargo">Cargo</label>
+                <select class="modal__input" id="personal-cargo" name="id_cargo" required>
+                    <option value="">Seleccione cargo</option>
+                    <?php foreach ($cargos as $cargo): ?>
+                        <option value="<?= (int) $cargo['id_cargo']; ?>"<?= ($esEdicion && (int) ($registro['id_cargo'] ?? 0) === (int) $cargo['id_cargo']) ? ' selected' : ''; ?>>
+                            <?= htmlspecialchars($cargo['nombre']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="modal__field">
+                <label class="modal__label" for="personal-nombres">Nombre</label>
+                <input class="modal__input" type="text" id="personal-nombres" name="nombres" required value="<?= htmlspecialchars($registro['nombres'] ?? ''); ?>">
+            </div>
+            <div class="modal__field">
+                <label class="modal__label" for="personal-apellidos">Apellido</label>
+                <input class="modal__input" type="text" id="personal-apellidos" name="apellidos" required value="<?= htmlspecialchars($registro['apellidos'] ?? ''); ?>">
+            </div>
+            <div class="modal__field">
+                <label class="modal__label" for="personal-telefono">Contacto</label>
+                <input class="modal__input" type="text" id="personal-telefono" name="telefono" value="<?= htmlspecialchars($registro['telefono'] ?? ''); ?>">
+            </div>
+            <div class="modal__footer">
+                <button type="button" class="modal__btn modal__btn--secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="modal__btn modal__btn--primary"><?= htmlspecialchars($textoBoton); ?></button>
+            </div>
+        </form>
+    </div>
+</div>
+</file>
+
+<file path="src/views/template.php">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión - Cuerpo de Bomberos</title>
+    <link rel="stylesheet" href="public/css/styles.css">
+</head>
+<body class="app">
+    <div class="app-shell">
+        <?php require __DIR__ . '/components/sidebar.php'; ?>
+
+        <div class="app-main">
+            <?php require __DIR__ . '/components/header.php'; ?>
+
+            <main class="app-content" id="main-content" role="main">
+                <?= $contenidoModulo ?? '' ?>
+            </main>
+        </div>
+    </div>
+
+    <script src="public/js/main.js" defer></script>
+</body>
+</html>
+</file>
+
+<file path="src/router.php">
+<?php
+
+use App\Controllers\EmergenciasController;
+use App\Controllers\InicioController;
+use App\Controllers\InsumosController;
+use App\Controllers\PacientesController;
+use App\Controllers\PersonalController;
+use App\Controllers\VehiculosController;
+
+$projectRoot = dirname(__DIR__);
+
+try {
+    $db = new PDO(
+        'mysql:host=127.0.0.1;port=3307;dbname=inventario;charset=utf8mb4',
+        'root',
+        '',
+        array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+    );
+} catch (PDOException $e) {
+    die('Error de conexión a la base de datos.');
+}
+
+$modulo = isset($_GET['modulo']) ? strtolower(trim($_GET['modulo'])) : 'inicio';
+
+$modulosPermitidos = array(
+    'inicio',
+    'personal',
+    'insumos',
+    'pacientes',
+    'emergencias',
+    'vehiculos',
+    'informes',
+);
+
+if (!in_array($modulo, $modulosPermitidos, true)) {
+    $modulo = 'inicio';
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
+    $moduloPost = isset($_POST['modulo']) ? strtolower(trim($_POST['modulo'])) : $modulo;
+
+    switch ($moduloPost) {
+        case 'personal':
+            (new PersonalController())->procesarPost($db);
+            break;
+        case 'insumos':
+            (new InsumosController())->procesarPost($db);
+            break;
+        case 'pacientes':
+            (new PacientesController())->procesarPost($db);
+            break;
+        case 'emergencias':
+            (new EmergenciasController())->procesarPost($db);
+            break;
+        case 'vehiculos':
+            (new VehiculosController())->procesarPost($db);
+            break;
+    }
+
+    $redirect = 'index.php?modulo=' . urlencode($moduloPost);
+    if (!empty($_POST['busqueda_retorno'])) {
+        $redirect .= '&busqueda=' . urlencode($_POST['busqueda_retorno']);
+    }
+    header('Location: ' . $redirect);
+    exit;
+}
+
+$moduloActivo = $modulo;
+$contenidoModulo = '';
+
+switch ($modulo) {
+    case 'inicio':
+        $controller = new InicioController();
+        ob_start();
+        $controller->index($db);
+        $contenidoModulo = ob_get_clean();
+        break;
+
+    case 'insumos':
+        $controller = new InsumosController();
+        ob_start();
+        $controller->index($db);
+        $contenidoModulo = ob_get_clean();
+        break;
+
+    case 'personal':
+        $controller = new PersonalController();
+        ob_start();
+        $controller->index($db);
+        $contenidoModulo = ob_get_clean();
+        break;
+
+    case 'pacientes':
+        $controller = new PacientesController();
+        ob_start();
+        $controller->index($db);
+        $contenidoModulo = ob_get_clean();
+        break;
+
+    case 'emergencias':
+        $controller = new EmergenciasController();
+        ob_start();
+        $controller->index($db);
+        $contenidoModulo = ob_get_clean();
+        break;
+
+    case 'vehiculos':
+        $controller = new VehiculosController();
+        ob_start();
+        $controller->index($db);
+        $contenidoModulo = ob_get_clean();
+        break;
+
+    case 'informes':
+        $rutaVista = $projectRoot . '/src/views/modules/informes.php';
+        if (is_file($rutaVista)) {
+            ob_start();
+            require $rutaVista;
+            $contenidoModulo = ob_get_clean();
+        }
+        break;
+
+    default:
+        $controller = new InicioController();
+        ob_start();
+        $controller->index($db);
+        $contenidoModulo = ob_get_clean();
+        $moduloActivo = 'inicio';
+        break;
+}
+
+require $projectRoot . '/src/views/template.php';
+</file>
+
+<file path="srs/.gitkeep">
+
+</file>
+
+</files>

@@ -1,15 +1,16 @@
 <?php
 
-require_once __DIR__ . '/../models/Model.php';
-require_once __DIR__ . '/../models/Insumo.php';
+namespace App\Controllers;
+
+use App\Models\Insumos;
 
 class InsumosController
 {
     public function index($db)
     {
         $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
-        $modelo = new Insumo($db);
-
+        $modelo = new Insumos($db);     
+        
         $kpis = $modelo->obtenerConteosKPI();
         $insumos = $modelo->obtenerTodos($busqueda);
         $categorias = $modelo->obtenerCategorias();
@@ -24,7 +25,7 @@ class InsumosController
 
     public function procesarPost($db)
     {
-        $modelo = new Insumo($db);
+        $modelo = new Insumos($db);
         $accion = $_POST['accion'] ?? '';
 
         if ($accion === 'guardar') {
@@ -39,7 +40,7 @@ class InsumosController
         }
 
         if ($accion === 'actualizar') {
-            $modelo->actualizar((int) ($_POST['id_insumo'] ?? 0), array(
+            $modelo->actualizar((int) ($_POST['id_insumos'] ?? 0), array(
                 'id_categoria'      => (int) ($_POST['id_categoria'] ?? 0),
                 'nombre'            => trim($_POST['nombre'] ?? ''),
                 'cantidad'          => (float) ($_POST['cantidad'] ?? 0),
@@ -49,7 +50,7 @@ class InsumosController
         }
 
         if ($accion === 'eliminar') {
-            $modelo->eliminar((int) ($_POST['id_insumo'] ?? 0));
+            $modelo->eliminar((int) ($_POST['id_insumos'] ?? 0));
         }
     }
 }

@@ -1,6 +1,8 @@
 <?php
 
-require_once __DIR__ . '/../models/Model.php';
+namespace App\Controllers;
+
+use PDO;
 
 class InicioController
 {

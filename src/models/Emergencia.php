@@ -1,5 +1,9 @@
 <?php
 
+namespace App\Models;
+
+use PDO;
+
 class Emergencia extends Model
 {
     private function sqlSelectBase()
