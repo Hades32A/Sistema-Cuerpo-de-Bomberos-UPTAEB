@@ -107,6 +107,12 @@ class Insumo extends Conexion
 
         $sql .= ' ORDER BY i.Nombre ASC';
 
+        /*
+         * prepare() deja la consulta lista con placeholders (:busqueda).
+         * execute($params) reemplaza esos huecos de forma segura — lo mismo que bindParam(),
+         * pero pasando todo en un array. Así el texto del buscador no se concatena directo al SQL
+         * y se evita inyección en la BD inventario.
+         */
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
@@ -194,6 +200,7 @@ class Insumo extends Conexion
             INSERT INTO insumos (Tipo_insumos, Nombre, Cantidad, Fecha_vencimiento, Estado)
             VALUES (:tipo, :nombre, :cantidad, :fecha_vencimiento, :estado)
         ';
+        // Mismo patrón: prepare + execute con :nombre en vez de meter variables en el string del INSERT
         $stmt = $this->db->prepare($sql);
         $stmt->execute(array(
             'tipo'              => $this->tipoDesdeIdCategoria((int) $datos['id_categoria']),

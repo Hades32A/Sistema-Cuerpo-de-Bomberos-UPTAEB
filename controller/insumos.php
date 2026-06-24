@@ -6,6 +6,11 @@ require_once __DIR__ . '/../model/Insumo.php';
 
 $modelo = new Insumo();
 
+/*
+ * Formularios del modal (registrar / editar / eliminar) llegan por POST.
+ * Leemos $_POST['accion'] para saber qué hacer, llamamos al modelo y redirigimos
+ * al mismo módulo para no reenviar el formulario si el usuario refresca (F5).
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     $accionPost = $_POST['accion'];
 
@@ -37,11 +42,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     exit;
 }
 
+// Buscador del módulo: POST con name="buscar", filtramos sin salir de ?url=insumos
 $busqueda = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
     $busqueda = trim($_POST['buscar']);
 }
 
+// Datos que la vista view/modules/insumos.php va a pintar en tablas y tarjetas
 $kpis = $modelo->obtenerConteosKPI();
 $insumos = $modelo->obtenerTodos($busqueda);
 $categorias = $modelo->obtenerCategorias();
