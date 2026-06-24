@@ -6,51 +6,13 @@ namespace Composer\Autoload;
 
 class ComposerStaticInitb32087827bd21995da069dfc6e4ad7ae
 {
-    public static $prefixLengthsPsr4 = array (
-        'A' =>
-        array (
-            'App\\Models\\' => 11,
-            'App\\Controllers\\' => 16,
-        ),
-    );
-
-    public static $prefixDirsPsr4 = array (
-        'App\\Models\\' =>
-        array (
-            0 => __DIR__ . '/../..' . '/src/models',
-        ),
-        'App\\Controllers\\' =>
-        array (
-            0 => __DIR__ . '/../..' . '/src/controllers',
-        ),
-    );
-
     public static $classMap = array (
-        'App\\Controllers\\EmergenciasController' => __DIR__ . '/../..' . '/src/controllers/EmergenciasController.php',
-        'App\\Controllers\\InformesController' => __DIR__ . '/../..' . '/src/controllers/InformesController.php',
-        'App\\Controllers\\InicioController' => __DIR__ . '/../..' . '/src/controllers/InicioController.php',
-        'App\\Controllers\\InsumosController' => __DIR__ . '/../..' . '/src/controllers/InsumosController.php',
-        'App\\Controllers\\PacientesController' => __DIR__ . '/../..' . '/src/controllers/PacientesController.php',
-        'App\\Controllers\\PersonalController' => __DIR__ . '/../..' . '/src/controllers/PersonalController.php',
-        'App\\Controllers\\UsuarioController' => __DIR__ . '/../..' . '/src/controllers/UsuarioController.php',
-        'App\\Controllers\\VehiculosController' => __DIR__ . '/../..' . '/src/controllers/VehiculosController.php',
-        'App\\Models\\Emergencia' => __DIR__ . '/../..' . '/src/models/Emergencia.php',
-        'App\\Models\\Insumo' => __DIR__ . '/../..' . '/src/models/Insumo.php',
-        'App\\Models\\Model' => __DIR__ . '/../..' . '/src/models/Model.php',
-        'App\\Models\\Paciente' => __DIR__ . '/../..' . '/src/models/Paciente.php',
-        'App\\Models\\Personal' => __DIR__ . '/../..' . '/src/models/Personal.php',
-        'App\\Models\\Roles\\Administrador' => __DIR__ . '/../..' . '/src/models/Roles/Administrador.php',
-        'App\\Models\\Roles\\Bombero' => __DIR__ . '/../..' . '/src/models/Roles/Bombero.php',
-        'App\\Models\\Usuario' => __DIR__ . '/../..' . '/src/models/Usuario.php',
-        'App\\Models\\Vehiculo' => __DIR__ . '/../..' . '/src/models/Vehiculo.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitb32087827bd21995da069dfc6e4ad7ae::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitb32087827bd21995da069dfc6e4ad7ae::$prefixDirsPsr4;
             $loader->classMap = ComposerStaticInitb32087827bd21995da069dfc6e4ad7ae::$classMap;
 
         }, null, ClassLoader::class);
