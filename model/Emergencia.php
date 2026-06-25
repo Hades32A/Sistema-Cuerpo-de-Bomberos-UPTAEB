@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/conexion.php';
 
 class Emergencia extends Conexion
 {
+    // El form manda tipos en minúscula; en BD van con mayúscula (Médica, Incendio...)
     private function normalizarTipo(string $tipo): string
     {
         $mapa = array(
@@ -51,6 +52,7 @@ class Emergencia extends Conexion
 
         $sql .= ' ORDER BY l.Fecha DESC, l.Hora DESC';
 
+        // Mismo esquema seguro: placeholders y execute en vez de armar el WHERE a mano
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
@@ -107,6 +109,7 @@ class Emergencia extends Conexion
             VALUES (:tipo, :fecha, :hora, :descripcion, :ubicacion, :cedula_paciente)
         ';
         $stmt = $this->db->prepare($sql);
+        // La cédula del paciente va bindeada; tabla llamada exige FK válida en inventario
         $stmt->execute(array(
             'tipo'            => $this->normalizarTipo($datos['tipo']),
             'fecha'           => $partes['fecha'],

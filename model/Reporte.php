@@ -52,6 +52,7 @@ class Reporte extends Conexion
     {
         $condicionFecha = $this->condicionPeriodo($periodo);
 
+        // Cada case arma un informe distinto (tabla simple o JOINs)
         switch ($tipo) {
             case 'emergencias':
                 return $this->informeEmergencias($condicionFecha);
@@ -86,6 +87,7 @@ class Reporte extends Conexion
 
     private function informeEmergencias(string $condicionFecha): array
     {
+        // Cruza llamada + paciente + personal + vehículos para el informe completo
         $sql = "
             SELECT
                 l.Id_llamadas AS codigo,
@@ -163,6 +165,7 @@ class Reporte extends Conexion
 
     private function informeServiciosCruzados(string $condicionFecha): array
     {
+        // Une llamada, paciente, insumos gastados, bomberos y vehículos en una sola fila por servicio
         $sql = "
             SELECT
                 l.Id_llamadas AS llamada,

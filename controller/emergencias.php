@@ -8,6 +8,10 @@ require_once __DIR__ . '/../model/Paciente.php';
 $modelo = new Emergencia();
 $modeloPaciente = new Paciente();
 
+/*
+ * Acciones del formulario de emergencias (POST + accion).
+ * Si hace falta paciente y no existe, lo creamos antes de guardar la llamada.
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     $accionPost = $_POST['accion'];
     $fecha = trim($_POST['fecha'] ?? date('Y-m-d'));
@@ -61,11 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     exit;
 }
 
+// Filtra por tipo o ubicación sin cambiar de módulo
 $busqueda = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
     $busqueda = trim($_POST['buscar']);
 }
 
+// Tarjetas, listado e incidente a editar (si viene ?editar=id)
 $kpis = $modelo->obtenerConteosKPI();
 $emergencias = $modelo->obtenerTodos($busqueda);
 $registro = null;

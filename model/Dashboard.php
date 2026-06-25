@@ -8,6 +8,7 @@ class Dashboard extends Conexion
 {
     public function obtenerEstadisticas(): array
     {
+        // Varios SELECT con COUNT y SUM(CASE WHEN...) — uno por tabla del inventario
         $sqlPersonal = '
             SELECT
                 COUNT(*) AS total,
@@ -15,6 +16,7 @@ class Dashboard extends Conexion
             FROM personal
         ';
         $stmtPersonal = $this->db->prepare($sqlPersonal);
+        // :activo va aparte; no metemos 'Activo' directo en el string del SQL
         $stmtPersonal->execute(array('activo' => 'Activo'));
         $personal = $stmtPersonal->fetch(PDO::FETCH_ASSOC);
 

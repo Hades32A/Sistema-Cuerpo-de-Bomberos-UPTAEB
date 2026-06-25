@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/conexion.php';
 
 class Paciente extends Conexion
 {
+    // Subconsultas traen la última emergencia atendida por cédula
     private function sqlSelectBase(): string
     {
         return '
@@ -55,6 +56,7 @@ class Paciente extends Conexion
 
         $sql .= ' ORDER BY p.Cedula DESC';
 
+        // prepare/execute con :busqueda — no concatenamos lo que escribe el usuario
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
@@ -111,6 +113,7 @@ class Paciente extends Conexion
             VALUES (:cedula, :nombres, :apellidos, :direccion, :pnf, :cargo, :tipo_paciente)
         ';
         $stmt = $this->db->prepare($sql);
+        // INSERT parametrizado; la cédula es PK y viene del controlador ya recortada
         $stmt->execute(array(
             'cedula'        => (int) $datos['documento_identidad'],
             'nombres'       => $datos['nombres'],

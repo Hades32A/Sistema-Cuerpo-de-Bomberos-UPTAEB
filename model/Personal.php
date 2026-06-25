@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/conexion.php';
 
 class Personal extends Conexion
 {
+    // Rangos del formulario ↔ columna Rango en tabla personal
     private function obtenerRangosCatalogo(): array
     {
         return array(
@@ -75,6 +76,7 @@ class Personal extends Conexion
 
         $sql .= ' ORDER BY p.Apellido, p.Nombre ASC';
 
+        // prepare + execute: el :busqueda no va pegado al SQL (evita inyección)
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
@@ -132,6 +134,7 @@ class Personal extends Conexion
             VALUES (:cedula, :rango, :nombres, :apellidos, :telefono, :estado)
         ';
         $stmt = $this->db->prepare($sql);
+        // Cada :campo se llena aparte; la cédula del form no entra cruda en la query
         $stmt->execute(array(
             'cedula'    => (int) $datos['documento_identidad'],
             'rango'     => $this->rangoDesdeIdCargo((int) $datos['id_cargo']),

@@ -6,6 +6,10 @@ require_once __DIR__ . '/../model/Personal.php';
 
 $modelo = new Personal();
 
+/*
+ * POST del modal: registrar, editar o eliminar bomberos.
+ * Mandamos todo al modelo y redirigimos para que F5 no duplique el registro.
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     $accionPost = $_POST['accion'];
 
@@ -37,11 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     exit;
 }
 
+// Buscador: name="buscar" por POST, nos quedamos en ?url=personal
 $busqueda = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
     $busqueda = trim($_POST['buscar']);
 }
 
+// Lo que va a la tabla, KPIs y modal de edición en view/modules/personal.php
 $kpis = $modelo->obtenerConteosKPI();
 $personal = $modelo->obtenerTodos($busqueda);
 $cargos = $modelo->obtenerCargos();

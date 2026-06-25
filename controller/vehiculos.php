@@ -6,6 +6,10 @@ require_once __DIR__ . '/../model/Vehiculo.php';
 
 $modelo = new Vehiculo();
 
+/*
+ * Alta, edición y baja de unidades. La placa es la PK en BD,
+ * por eso id_vehiculo en el form es string, no int.
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     $accionPost = $_POST['accion'];
 
@@ -39,11 +43,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     exit;
 }
 
+// Buscar por placa, marca o modelo
 $busqueda = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
     $busqueda = trim($_POST['buscar']);
 }
 
+// Datos para la grilla y el modal en view/modules/vehiculos.php
 $kpis = $modelo->obtenerConteosKPI();
 $vehiculos = $modelo->obtenerTodos($busqueda);
 $registro = null;

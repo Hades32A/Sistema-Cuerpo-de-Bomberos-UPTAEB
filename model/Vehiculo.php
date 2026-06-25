@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/conexion.php';
 
 class Vehiculo extends Conexion
 {
+    // Estados del select del modal ↔ texto en columna Estado de vehiculo
     private function normalizarEstadoDb(string $estado): string
     {
         $mapa = array(
@@ -87,6 +88,7 @@ class Vehiculo extends Conexion
 
         $sql .= ' ORDER BY v.Placa ASC';
 
+        // Búsqueda segura con :busqueda (placa/marca/modelo)
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
@@ -134,6 +136,7 @@ class Vehiculo extends Conexion
             VALUES (:placa, :tipo, :marca, :anio, :modelo, :estado)
         ';
         $stmt = $this->db->prepare($sql);
+        // Placa y demás campos van por placeholder, no inline en el INSERT
         $stmt->execute(array(
             'placa'  => $datos['placa'],
             'tipo'   => $this->normalizarTipoDb($datos['tipo']),

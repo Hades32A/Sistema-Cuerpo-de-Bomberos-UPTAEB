@@ -6,6 +6,10 @@ require_once __DIR__ . '/../model/Paciente.php';
 
 $modelo = new Paciente();
 
+/*
+ * CRUD de pacientes desde el modal. resolver_tipo_paciente() traduce
+ * el campo foráneo del form a Interno/Externo antes de guardar.
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     $accionPost = $_POST['accion'];
     $tipoPaciente = resolver_tipo_paciente(trim($_POST['foraneo'] ?? ''));
@@ -41,11 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     exit;
 }
 
+// Búsqueda por nombre, apellido o cédula
 $busqueda = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
     $busqueda = trim($_POST['buscar']);
 }
 
+// KPIs + filas de la tabla en view/modules/pacientes.php
 $kpis = $modelo->obtenerConteosKPI();
 $pacientes = $modelo->obtenerTodos($busqueda);
 $registro = null;
