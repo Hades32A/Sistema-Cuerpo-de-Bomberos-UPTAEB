@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
 
 // Datos para la grilla y el modal en view/modules/vehiculos.php
 $kpis = $modelo->obtenerConteosKPI();
-$vehiculos = $modelo->obtenerTodos($busqueda);
+$vehiculos = $busqueda !== '' ? $modelo->buscar($busqueda) : $modelo->obtenerTodos();
 $registro = null;
 
 if (isset($_GET['editar'])) {

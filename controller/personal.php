@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
 
 // Lo que va a la tabla, KPIs y modal de edición en view/modules/personal.php
 $kpis = $modelo->obtenerConteosKPI();
-$personal = $modelo->obtenerTodos($busqueda);
+$personal = $busqueda !== '' ? $modelo->buscar($busqueda) : $modelo->obtenerTodos();
 $cargos = $modelo->obtenerCargos();
 $registro = null;
 

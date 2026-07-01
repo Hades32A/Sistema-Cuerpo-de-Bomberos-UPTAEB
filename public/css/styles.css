@@ -81,7 +81,7 @@ body.app {
 
 .sidebar__item,
 .nav-item {
-    margin: 0.25rem 0.75rem;
+    margin: 0.3rem 0.75rem;
 }
 
 .sidebar__link,
@@ -89,10 +89,10 @@ body.app {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1.15rem;
     color: rgba(255, 255, 255, 0.92);
     text-decoration: none;
-    font-size: 0.9375rem;
+    font-size: 1.1rem;
     font-weight: 500;
     border-radius: 0.5rem;
     border: 1px solid transparent;
@@ -111,6 +111,8 @@ body.app {
 .sidebar__link-text,
 .nav-link__text {
     flex: 1;
+    font-size: 1.1rem;
+    line-height: 1.35;
 }
 
 .sidebar__link:hover,
@@ -187,10 +189,10 @@ body.app {
 }
 
 .header__module-title {
-    font-size: 1.375rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: #0f172a;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .header__profile,

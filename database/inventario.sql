@@ -258,6 +258,34 @@ INSERT INTO `vehiculos_asignados` (`Id_vehiculo_asignad`, `Id_llamadas`, `Placa`
 (1, 1, '1010'),
 (2, 2, '2020');
 
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuarios`
+--
+
+CREATE TABLE `usuarios` (
+  `id` int(11) NOT NULL,
+  `usuario` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `rol` enum('administrador','bombero') NOT NULL DEFAULT 'bombero'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `reportes`
+--
+
+CREATE TABLE `reportes` (
+  `id_reporte` int(11) NOT NULL,
+  `tipo_informe` varchar(50) NOT NULL,
+  `periodo` varchar(20) NOT NULL,
+  `creado_por` varchar(50) NOT NULL,
+  `formato_exportado` enum('EXCEL','WORD') NOT NULL DEFAULT 'EXCEL'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Índices para tablas volcadas
 --
@@ -346,6 +374,19 @@ ALTER TABLE `vehiculos_asignados`
   ADD KEY `Placa` (`Placa`);
 
 --
+-- Indices de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `usuario` (`usuario`);
+
+--
+-- Indices de la tabla `reportes`
+--
+ALTER TABLE `reportes`
+  ADD PRIMARY KEY (`id_reporte`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
@@ -390,6 +431,18 @@ ALTER TABLE `servicio`
 --
 ALTER TABLE `vehiculos_asignados`
   MODIFY `Id_vehiculo_asignad` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `reportes`
+--
+ALTER TABLE `reportes`
+  MODIFY `id_reporte` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Restricciones para tablas volcadas
@@ -437,6 +490,21 @@ ALTER TABLE `vehiculos_asignados`
   ADD CONSTRAINT `vehiculos_asignados_ibfk_2` FOREIGN KEY (`Placa`) REFERENCES `vehiculo` (`Placa`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `vehiculos_asignados_ibfk_3` FOREIGN KEY (`Id_llamadas`) REFERENCES `llamada` (`Id_llamadas`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
+
+--
+-- Usuarios de prueba para el módulo de login (descomentar para insertar)
+-- Administrador: admin123 / admin12345
+-- Bombero: bombero123 / bombero12345
+--
+-- INSERT INTO `usuarios` (`id`, `usuario`, `password`, `nombre`, `rol`) VALUES
+-- (1, 'admin123', '$2y$10$BlnnMLzWippWSe1sRL.nS.Gr3Jvl/R.xzgaIX7coQHpSi0ISp8/xm', 'Administrador General', 'administrador'),
+-- (2, 'bombero123', '$2y$10$uDwncMMeakjU6c98882RJefL81k42TECU4zy0JwX72f5ZpRorWUf6', 'Bombero Operativo', 'bombero');
+
+--
+-- Si ya existen filas con hashes incorrectos, ejecutar estos UPDATE:
+--
+-- UPDATE `usuarios` SET `password` = '$2y$10$BlnnMLzWippWSe1sRL.nS.Gr3Jvl/R.xzgaIX7coQHpSi0ISp8/xm' WHERE `usuario` = 'admin123';
+-- UPDATE `usuarios` SET `password` = '$2y$10$uDwncMMeakjU6c98882RJefL81k42TECU4zy0JwX72f5ZpRorWUf6' WHERE `usuario` = 'bombero123';
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

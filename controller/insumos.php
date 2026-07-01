@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
 
 // Datos que la vista view/modules/insumos.php va a pintar en tablas y tarjetas
 $kpis = $modelo->obtenerConteosKPI();
-$insumos = $modelo->obtenerTodos($busqueda);
+$insumos = $busqueda !== '' ? $modelo->buscar($busqueda) : $modelo->obtenerTodos();
 $categorias = $modelo->obtenerCategorias();
 $registro = null;
 

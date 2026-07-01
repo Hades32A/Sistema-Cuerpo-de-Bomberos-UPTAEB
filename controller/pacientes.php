@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
 
 // KPIs + filas de la tabla en view/modules/pacientes.php
 $kpis = $modelo->obtenerConteosKPI();
-$pacientes = $modelo->obtenerTodos($busqueda);
+$pacientes = $busqueda !== '' ? $modelo->buscar($busqueda) : $modelo->obtenerTodos();
 $registro = null;
 
 if (isset($_GET['editar'])) {

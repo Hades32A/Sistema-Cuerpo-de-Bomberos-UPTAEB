@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buscar'])) {
 
 // Tarjetas, listado e incidente a editar (si viene ?editar=id)
 $kpis = $modelo->obtenerConteosKPI();
-$emergencias = $modelo->obtenerTodos($busqueda);
+$emergencias = $busqueda !== '' ? $modelo->buscar($busqueda) : $modelo->obtenerTodos();
 $registro = null;
 
 if (isset($_GET['editar'])) {

@@ -76,21 +76,24 @@ class Vehiculo extends Conexion
         ';
     }
 
-    public function obtenerTodos(string $busqueda = ''): array
+    public function obtenerTodos(): array
     {
-        $sql = $this->sqlSelectBase();
-        $params = array();
+        $sql = $this->sqlSelectBase() . ' ORDER BY v.Placa ASC';
+        $stmt = $this->db->query($sql);
 
-        if ($busqueda !== '') {
-            $sql .= ' WHERE v.Placa LIKE :busqueda OR v.Marca LIKE :busqueda OR v.Modelo LIKE :busqueda';
-            $params['busqueda'] = '%' . $busqueda . '%';
-        }
+        return array_map(array($this, 'mapearFila'), $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
 
-        $sql .= ' ORDER BY v.Placa ASC';
-
-        // Búsqueda segura con :busqueda (placa/marca/modelo)
+    public function buscar(string $criterio): array
+    {
+        $sql = $this->sqlSelectBase() . '
+            WHERE v.Placa LIKE :busqueda
+               OR v.Marca LIKE :busqueda
+               OR v.Modelo LIKE :busqueda
+            ORDER BY v.Placa ASC
+        ';
         $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        $stmt->execute(array('busqueda' => '%' . $criterio . '%'));
 
         return array_map(array($this, 'mapearFila'), $stmt->fetchAll(PDO::FETCH_ASSOC));
     }

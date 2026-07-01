@@ -40,21 +40,22 @@ class Emergencia extends Conexion
         ';
     }
 
-    public function obtenerTodos(string $busqueda = ''): array
+    public function obtenerTodos(): array
     {
-        $sql = $this->sqlSelectBase();
-        $params = array();
+        $sql = $this->sqlSelectBase() . ' ORDER BY l.Fecha DESC, l.Hora DESC';
+        $stmt = $this->db->query($sql);
 
-        if ($busqueda !== '') {
-            $sql .= ' WHERE l.Tipo_emergencia LIKE :busqueda OR l.Ubicacion LIKE :busqueda';
-            $params['busqueda'] = '%' . $busqueda . '%';
-        }
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-        $sql .= ' ORDER BY l.Fecha DESC, l.Hora DESC';
-
-        // Mismo esquema seguro: placeholders y execute en vez de armar el WHERE a mano
+    public function buscar(string $criterio): array
+    {
+        $sql = $this->sqlSelectBase() . '
+            WHERE l.Tipo_emergencia LIKE :busqueda OR l.Ubicacion LIKE :busqueda
+            ORDER BY l.Fecha DESC, l.Hora DESC
+        ';
         $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        $stmt->execute(array('busqueda' => '%' . $criterio . '%'));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

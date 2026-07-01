@@ -1,6 +1,13 @@
 <?php
 $tipoSeleccionado = $tipoInforme ?? '';
 $periodoSeleccionado = $periodoInforme ?? '7d';
+$formatoActivo = $formatoSeleccionado ?? 'EXCEL';
+$metricas = $metricas ?? array(
+    'emergencias' => 0,
+    'personal'    => 0,
+    'insumos'     => 0,
+    'vehiculos'   => 0,
+);
 ?>
 <div class="informes-container" style="padding: 24px; font-family: system-ui, -apple-system, sans-serif; display: flex; gap: 24px; background-color: #f8fafc; min-height: 100vh;">
 
@@ -12,10 +19,10 @@ $periodoSeleccionado = $periodoInforme ?? '7d';
                 <h2 style="font-size: 1.1rem; font-weight: 600; margin: 0;">Generador de Informes</h2>
             </div>
 
-            <form method="GET" action="?url=informes" style="display: flex; flex-direction: column; gap: 16px;">
+            <form method="POST" action="" style="display: flex; flex-direction: column; gap: 16px;">
                 <div>
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px;">Tipo de Informe</label>
-                    <select name="tipo" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #64748b; font-size: 0.9rem; outline: none;" required>
+                    <select name="tipo_informe" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #64748b; font-size: 0.9rem; outline: none;" required>
                         <option value="">Seleccione el tipo de informe</option>
                         <option value="emergencias"<?= $tipoSeleccionado === 'emergencias' ? ' selected' : '' ?>>Emergencias Atendidas</option>
                         <option value="insumos"<?= $tipoSeleccionado === 'insumos' ? ' selected' : '' ?>>Inventario de Insumos</option>
@@ -26,16 +33,33 @@ $periodoSeleccionado = $periodoInforme ?? '7d';
 
                 <div>
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px;">Período del Informe</label>
-                    <select name="periodo" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #64748b; font-size: 0.9rem; outline: none;">
+                    <select name="periodo_informe" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #64748b; font-size: 0.9rem; outline: none;">
                         <option value="7d"<?= $periodoSeleccionado === '7d' ? ' selected' : '' ?>>Últimos 7 días</option>
                         <option value="mes"<?= $periodoSeleccionado === 'mes' ? ' selected' : '' ?>>Mes actual</option>
                         <option value="anio"<?= $periodoSeleccionado === 'anio' ? ' selected' : '' ?>>Año en curso</option>
                     </select>
                 </div>
 
-                <div style="display: flex; gap: 12px; margin-top: 8px;">
-                    <button type="submit" style="flex: 1; background: #b31412; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">
-                        📊 Generar Informe
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 8px;">Formato de Exportación</label>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #334155; cursor: pointer;">
+                            <input type="radio" name="formato_exportar" value="EXCEL"<?= $formatoActivo === 'EXCEL' ? ' checked' : '' ?> required>
+                            Excel (.xls)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #334155; cursor: pointer;">
+                            <input type="radio" name="formato_exportar" value="WORD"<?= $formatoActivo === 'WORD' ? ' checked' : '' ?>>
+                            Word (.doc)
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap;">
+                    <button type="submit" name="accion_formulario" value="previsualizar" style="flex: 1; min-width: 160px; background: #475569; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">
+                        👁 Previsualizar
+                    </button>
+                    <button type="submit" name="accion_formulario" value="exportar" style="flex: 1; min-width: 160px; background: #b31412; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">
+                        ⬇ Exportar Informe
                     </button>
                 </div>
             </form>
@@ -47,7 +71,7 @@ $periodoSeleccionado = $periodoInforme ?? '7d';
             <?php if ($informe === null): ?>
                 <div style="flex: 1; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; color: #64748b; background-color: #f8fafc;">
                     <div style="font-size: 3.5rem; color: #94a3b8; margin-bottom: 12px;">📑</div>
-                    <p style="font-size: 0.95rem; margin: 0; max-width: 320px; line-height: 1.4;">Seleccione los parámetros del informe para ver la vista previa</p>
+                    <p style="font-size: 0.95rem; margin: 0; max-width: 320px; line-height: 1.4;">Seleccione los parámetros del informe para ver la vista previa o exportar el documento</p>
                 </div>
             <?php else: ?>
                 <h3 style="margin: 0 0 12px 0; color: #334155;"><?= htmlspecialchars($informe['titulo'] ?? 'Informe', ENT_QUOTES, 'UTF-8') ?></h3>
@@ -56,13 +80,13 @@ $periodoSeleccionado = $periodoInforme ?? '7d';
                         <thead class="insumos-table__head">
                             <tr>
                                 <?php foreach ($informe['columnas'] as $columna): ?>
-                                    <th scope="col"><?= htmlspecialchars($columna, ENT_QUOTES, 'UTF-8') ?></th>
+                                    <th scope="col"><?= htmlspecialchars((string) $columna, ENT_QUOTES, 'UTF-8') ?></th>
                                 <?php endforeach; ?>
                             </tr>
                         </thead>
                         <tbody class="insumos-table__body">
                             <?php if (empty($informe['filas'])): ?>
-                                <tr><td colspan="<?= count($informe['columnas']) ?>" style="text-align:center;padding:24px;">No hay datos para el período seleccionado.</td></tr>
+                                <tr><td colspan="<?= max(1, count($informe['columnas'])) ?>" style="text-align:center;padding:24px;">No hay datos para el período seleccionado.</td></tr>
                             <?php else: ?>
                                 <?php foreach ($informe['filas'] as $fila): ?>
                                     <tr>
@@ -84,7 +108,7 @@ $periodoSeleccionado = $periodoInforme ?? '7d';
         <div class="card-panel" style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; color: #1e293b;">
                 <span style="font-size: 1.2rem;">📋</span>
-                <h2 style="font-size: 1.1rem; font-weight: 600; margin: 0;">Informes Rápidos</h2>
+                <h2 style="font-size: 1.1rem; font-weight: 600; margin: 0;">Indicadores Rápidos</h2>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -92,16 +116,16 @@ $periodoSeleccionado = $periodoInforme ?? '7d';
                     <div>
                         <h4 style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Emergencias Atendidas</h4>
                         <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Últimos 7 días</span>
-                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;"><?= (int) ($resumen['emergencias_7d'] ?? 0) ?> emergencias</span>
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;"><?= (int) ($metricas['emergencias'] ?? 0) ?> emergencias</span>
                     </div>
                     <span style="color: #b31412; font-size: 0.9rem;">📄</span>
                 </a>
 
-                <a href="?url=informes&amp;tipo=personal" style="text-decoration:none;color:inherit;border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+                <a href="?url=informes&amp;tipo=personal&amp;periodo=mes" style="text-decoration:none;color:inherit;border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
                     <div>
                         <h4 style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Personal Activo</h4>
-                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Mes actual</span>
-                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;"><?= (int) ($resumen['personal_activo'] ?? 0) ?> bomberos</span>
+                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Estado actual</span>
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;"><?= (int) ($metricas['personal'] ?? 0) ?> bomberos</span>
                     </div>
                     <span style="color: #b31412; font-size: 0.9rem;">📄</span>
                 </a>
@@ -109,8 +133,8 @@ $periodoSeleccionado = $periodoInforme ?? '7d';
                 <a href="?url=informes&amp;tipo=insumos" style="text-decoration:none;color:inherit;border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
                     <div>
                         <h4 style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Insumos Críticos</h4>
-                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Stock actual</span>
-                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;"><?= (int) ($resumen['insumos_criticos'] ?? 0) ?> insumos</span>
+                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Stock bajo mínimo</span>
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;"><?= (int) ($metricas['insumos'] ?? 0) ?> insumos</span>
                     </div>
                     <span style="color: #b31412; font-size: 0.9rem;">📄</span>
                 </a>
@@ -119,7 +143,7 @@ $periodoSeleccionado = $periodoInforme ?? '7d';
                     <div>
                         <h4 style="font-size: 0.88rem; font-weight: 600; color: #334155; margin: 0;">Vehículos Operativos</h4>
                         <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 2px;">Estado actual</span>
-                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;"><?= (int) ($resumen['vehiculos_operativos'] ?? 0) ?> vehículos</span>
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #b31412; display: block; margin-top: 6px;"><?= (int) ($metricas['vehiculos'] ?? 0) ?> vehículos</span>
                     </div>
                     <span style="color: #b31412; font-size: 0.9rem;">📄</span>
                 </a>

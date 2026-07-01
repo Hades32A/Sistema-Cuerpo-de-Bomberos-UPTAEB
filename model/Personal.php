@@ -64,21 +64,24 @@ class Personal extends Conexion
         ';
     }
 
-    public function obtenerTodos(string $busqueda = ''): array
+    public function obtenerTodos(): array
     {
-        $sql = $this->sqlSelectBase();
-        $params = array();
+        $sql = $this->sqlSelectBase() . ' ORDER BY p.Apellido, p.Nombre ASC';
+        $stmt = $this->db->query($sql);
 
-        if ($busqueda !== '') {
-            $sql .= ' WHERE p.Nombre LIKE :busqueda OR p.Apellido LIKE :busqueda OR CAST(p.Cedula AS CHAR) LIKE :busqueda';
-            $params['busqueda'] = '%' . $busqueda . '%';
-        }
+        return array_map(array($this, 'mapearFila'), $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
 
-        $sql .= ' ORDER BY p.Apellido, p.Nombre ASC';
-
-        // prepare + execute: el :busqueda no va pegado al SQL (evita inyección)
+    public function buscar(string $criterio): array
+    {
+        $sql = $this->sqlSelectBase() . '
+            WHERE p.Nombre LIKE :busqueda
+               OR p.Apellido LIKE :busqueda
+               OR CAST(p.Cedula AS CHAR) LIKE :busqueda
+            ORDER BY p.Apellido, p.Nombre ASC
+        ';
         $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        $stmt->execute(array('busqueda' => '%' . $criterio . '%'));
 
         return array_map(array($this, 'mapearFila'), $stmt->fetchAll(PDO::FETCH_ASSOC));
     }

@@ -95,26 +95,24 @@ class Insumo extends Conexion
         ';
     }
 
-    public function obtenerTodos(string $busqueda = ''): array
+    public function obtenerTodos(): array
     {
-        $sql = $this->sqlSelectBase();
-        $params = array();
+        $sql = $this->sqlSelectBase() . ' ORDER BY i.Nombre ASC';
+        $stmt = $this->db->query($sql);
 
-        if ($busqueda !== '') {
-            $sql .= ' WHERE i.Nombre LIKE :busqueda OR i.Tipo_insumos LIKE :busqueda OR CAST(i.Id_insumos AS CHAR) LIKE :busqueda';
-            $params['busqueda'] = '%' . $busqueda . '%';
-        }
+        return array_map(array($this, 'mapearFila'), $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
 
-        $sql .= ' ORDER BY i.Nombre ASC';
-
-        /*
-         * prepare() deja la consulta lista con placeholders (:busqueda).
-         * execute($params) reemplaza esos huecos de forma segura — lo mismo que bindParam(),
-         * pero pasando todo en un array. Así el texto del buscador no se concatena directo al SQL
-         * y se evita inyección en la BD inventario.
-         */
+    public function buscar(string $criterio): array
+    {
+        $sql = $this->sqlSelectBase() . '
+            WHERE i.Nombre LIKE :busqueda
+               OR i.Tipo_insumos LIKE :busqueda
+               OR CAST(i.Id_insumos AS CHAR) LIKE :busqueda
+            ORDER BY i.Nombre ASC
+        ';
         $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        $stmt->execute(array('busqueda' => '%' . $criterio . '%'));
 
         return array_map(array($this, 'mapearFila'), $stmt->fetchAll(PDO::FETCH_ASSOC));
     }
